@@ -43,3 +43,8 @@ Add the --verbose or -v argument to have sanity checks and feedback on the runni
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr9.json -s -v
 ```
+
+To deactivate the virtual environment once the job has finished:
+```
+deactivate
+```
