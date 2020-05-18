@@ -1,6 +1,6 @@
 # centerfinder
 
-Clone this repository by running:
+Clone this repository by running the following in the terminal:
 ```
 git clone https://github.com/mishtak00/centerfinder
 ```
@@ -17,17 +17,17 @@ To run the voting procedure, call the --kernel_radius or -r argument followed by
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143
 ```
 
-To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote nr:
+To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote nr as shown below. The default threshold is 0 (no cutting by vote number, every centers grid is preserved).
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170
 ```
-The default threshold is 0 (no cutting by vote number, every centers grid is preserved).
 
-To subtract the background from the galaxy density grid, call the --background_subtract or -b argument:
+
+To subtract the background from the galaxy density grid, call the --background_subtract or -b argument like below. The default voting procedure won't apply background subtraction unless the user requests it.
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b
 ```
-The default voting procedure won't apply background subtraction unless the user requests with the above.
+
 
 Add the --params_file or -p argument to change the default file from which the cosmological parameters are loaded to a new file whose name is given as argument:
 ```
