@@ -53,6 +53,8 @@ class CenterFinder(object):
 		self.G_radii = self.LUT_radii(self.G_redshift)
 
 
+	""" add repr here """
+
 
 	def _kernel(self, additional_thickness: float = 0., show_kernel: bool = False) -> np.ndarray:
 		# this is the number of bins in each dimension axis
@@ -71,8 +73,10 @@ class CenterFinder(object):
 
 		# this is where the magic happens: each bin at a radial distance of bao_radius from the
 		# kernel's center gets assigned a 1 and all other bins get a 0
-		kernel_grid = np.array([[[1 if (np.linalg.norm(np.array([i, j, k]) - kernel_center) >= inscribed_r_idx_units_lower_bound
-										and np.linalg.norm(np.array([i, j, k]) - kernel_center) < inscribed_r_idx_units_upper_bound)
+		kernel_grid = np.array([[[1 if (np.linalg.norm(np.array([i, j, k]) - kernel_center) 
+															>= inscribed_r_idx_units_lower_bound 
+									and np.linalg.norm(np.array([i, j, k]) - kernel_center) 
+															< inscribed_r_idx_units_upper_bound)
 								  else 0
 								  for k in range(kernel_bin_count)]
 								 for j in range(kernel_bin_count)]
@@ -95,7 +99,7 @@ class CenterFinder(object):
 
 
 
-	def _vote(self, background_subtract: bool = False, plot: bool = False):
+	def _vote(self, backsub: bool, plot: bool = False):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
 		self.galaxies_cartesian = np.array(xyzs).T  # each galaxy is represented by (x, y, z)
@@ -109,11 +113,17 @@ class CenterFinder(object):
 			print('Histogramming completed successfully...')
 			print('Density grid shape:', density_grid.shape)
 
-		# subtracts the background
-		if background_subtract:
-			background, _ = project_and_sample(density_grid, self.density_grid_edges, printout=printout)
+		# makes background grid and subtracts it from the density grid
+		if backsub:
+			background = self._project_and_sample(density_grid, self.density_grid_edges)
 			density_grid -= background
+			del background
 			density_grid[density_grid < 0.] = 0.
+
+			if self.printout:
+				print('Background subtraction completed successfully...')
+				print('Maximum number of votes per single bin:', density_grid.max())
+				print('Minimum number of votes per single bin:', density_grid.min())
 
 		# makes the kernel for scanning over the density grid
 		kernel_grid = self._kernel()
@@ -125,8 +135,8 @@ class CenterFinder(object):
 		
 		if self.printout:
 			print('Observed grid shape:', self.centers_grid.shape)
-			print('Maximum number of voters per single bin:', self.centers_grid.max())
-			print('Minimum number of voters per single bin:', self.centers_grid.min())
+			print('Maximum number of votes per single bin:', self.centers_grid.max())
+			print('Minimum number of votes per single bin:', self.centers_grid.min())
 
 		# save whole grid without a vote cut
 		if self.save:
@@ -135,15 +145,173 @@ class CenterFinder(object):
 
 
 
-	def find_centers(self):
+	def _project_and_sample(self, grid: np.ndarray, grid_edges: list) -> (np.ndarray, tuple):
+		
+		# TODO: these are unnecessary, remove and reference self's attribute
+		bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs = \
+			np.array([(grid_edges[i][:-1] + grid_edges[i][1:]) / 2 for i in range(len(grid_edges))])
 
-		self._vote()
+		# TODO: remove unncessary
+		# 	np.save(self.savename + '_xbins.npy', bin_centers_edges_xs)
+		# 	np.save(self.savename + '_ybins.npy', bin_centers_edges_ys)
+		# 	np.save(self.savename + '_zbins.npy', bin_centers_edges_zs)
+		# if self.save:
 
-		# applies vote threshold and saves the found centers list as .fits catalog
+		bin_centers_xs, bin_centers_ys, bin_centers_zs = np.array([(x, y, z) 
+			for x in bin_centers_edges_xs 
+			for y in bin_centers_edges_ys 
+			for z in bin_centers_edges_zs]).T
+		del bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs
+		if self.printout:
+			print('Number of bin centers in cartesian coordinates:', len(bin_centers_xs))
+		"""
+		Why can we be sure that it is okay to interpolate the radii and redshift values for these bin centers coordinates?
+		Because we know that the range of values of the bin centers is exactly in between the min and the max of the grid bin edges x, y, z.
+		The radii come from the 3d euclidian distance, which preserves this relationship (convex function of x,y,z), and thus it is fine
+		to use the beforehand-calculated interpolation lookup table to find the redshifts from the radii.
+		"""
+		bin_centers_ra, bin_centers_dec, _, bin_centers_radii = \
+			cartesian2sky(bin_centers_xs, bin_centers_ys, bin_centers_zs, self.LUT_redshifts)
+		del bin_centers_xs, bin_centers_ys, bin_centers_zs
+		if self.printout:
+			print('Number of bin centers in sky coordinates:', len(bin_centers_ra))
+
+		# total number of votes
+		N_tot = np.sum(grid)
+		if self.printout:
+			print('Total number of votes:', N_tot)
+
+		# get volume adjustment grid, the differentials in sky coordinate dimensions and the number of bins in each dimension
+		vol_adjust_ratio_grid, d_r, d_alpha, d_delta, N_bins_r, N_bins_alpha, N_bins_delta = \
+			self._volume_adjustment(bin_centers_radii, bin_centers_ra, bin_centers_dec, grid.shape)
+
+		# alpha-delta and z counts
+		N_bins_x, N_bins_y, N_bins_z = grid.shape[0], grid.shape[1], grid.shape[2]
+		sky_coords_grid_shape = (N_bins_x, N_bins_y, N_bins_z, 3)  # need to store a triple at each grid bin
+		sky_coords_grid = np.array(list(zip(bin_centers_ra, bin_centers_dec, bin_centers_radii))).reshape(sky_coords_grid_shape)
+		if self.printout:
+			print('Shape of grid containing sky coordinates of observed grid\'s bin centers:', sky_coords_grid.shape)
+
+		# getting some variables ready for the projection step
+		alpha_min = bin_centers_ra.min()
+		d_alpha = np.rad2deg(d_alpha)
+		delta_min = bin_centers_dec.min()
+		d_delta = np.rad2deg(d_delta)
+		r_min = bin_centers_radii.min()
+		del bin_centers_ra, bin_centers_dec, bin_centers_radii
+
+		# vectorial computation of the sky indices
+		sky_coords_grid[:, :, :, 0] = (sky_coords_grid[:, :, :, 0] - alpha_min) // d_alpha
+		sky_coords_grid[:, :, :, 1] = (sky_coords_grid[:, :, :, 1] - delta_min) // d_delta
+		sky_coords_grid[:, :, :, 2] = (sky_coords_grid[:, :, :, 2] - r_min) // d_r
+		sky_coords_grid = sky_coords_grid.astype(int)
+
+		# TODO: the condition here should be >= rather than ==
+		# the following fixes any indices that lie beyond the outer walls of the sky grid by pulling them 1 index unit back
+		sky_coords_grid[:, :, :, 0][sky_coords_grid[:, :, :, 0] == N_bins_alpha] = N_bins_alpha - 1
+		sky_coords_grid[:, :, :, 1][sky_coords_grid[:, :, :, 1] == N_bins_delta] = N_bins_delta - 1
+		sky_coords_grid[:, :, :, 2][sky_coords_grid[:, :, :, 2] == N_bins_r] = N_bins_r - 1
+
+		alpha_delta_grid, r_grid = self._alpha_delta_r_projections_from_grid(grid, N_bins_x, N_bins_y, N_bins_z, 
+			sky_coords_grid, N_bins_alpha, N_bins_delta, N_bins_r)
+		if self.printout:
+			print('Shape of alpha-delta grid:', alpha_delta_grid.shape)
+			print('Shape of r grid:', r_grid.shape)
+			print('Maximum number of voters per single bin in alpha-delta grid:', alpha_delta_grid.max())
+			print('Minimum number of voters per single bin in alpha-delta grid:', alpha_delta_grid.min())
+			print('Maximum number of voters per single bin in r grid:', r_grid.max())
+			print('Minimum number of voters per single bin in r grid:', r_grid.min())
+			print('N_tot_observed = N_tot_alpha_delta = N_tot_r:', N_tot == np.sum(alpha_delta_grid) == np.sum(r_grid))
+
+		# TODO: meshgrid this
+		expected_grid = np.array([[[alpha_delta_grid[sky_coords_grid[i, j, k, 0], sky_coords_grid[i, j, k, 1]]
+									 * r_grid[sky_coords_grid[i, j, k, 2]]
+									for k in range(N_bins_z)]
+								   for j in range(N_bins_y)]
+								  for i in range(N_bins_x)])
+
+		expected_grid /= N_tot  # normalization
+		expected_grid *= vol_adjust_ratio_grid  # volume adjustment
+		if self.printout:
+			print('Expected grid shape:', expected_grid.shape)
+			print('Maximum number of expected votes:', expected_grid.max())
+			print('Minimum number of expected votes:', expected_grid.min())
+
+		# if self.save:
+		# 	np.save(self.savename + "_exp_grid.npy", expected_grid)
+
+		return expected_grid#, (bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs)
+
+
+
+	def _volume_adjustment(self, bin_centers_radii: np.array, bin_centers_ra: np.array, 
+		bin_centers_dec: np.array, observed_grid_shape: tuple) -> np.ndarray:
+		
+		# radius
+		mid_r = (bin_centers_radii.max() + bin_centers_radii.min()) / 2
+		delta_r = bin_centers_radii.max() - bin_centers_radii.min()
+		N_bins_r = int(np.ceil(delta_r / self.grid_spacing))
+		d_r = self.grid_spacing
+		r_sqr = bin_centers_radii ** 2
+
+		# alpha
+		delta_alpha = np.deg2rad(bin_centers_ra.max() - bin_centers_ra.min())
+		N_bins_alpha = int(np.ceil((delta_alpha * mid_r) / self.grid_spacing))
+		d_alpha = delta_alpha / N_bins_alpha
+
+		# delta
+		delta_delta = np.deg2rad(bin_centers_dec.max() - bin_centers_dec.min())
+		N_bins_delta = int(np.ceil((delta_delta * mid_r) / self.grid_spacing))
+		d_delta = delta_delta / N_bins_delta
+		cos_delta = np.cos(np.deg2rad(bin_centers_dec))
+
+		# angular volume differential
+		dV_ang = d_alpha * cos_delta * d_delta * r_sqr * d_r
+		# euclidean volume differential
+		dV_xyz = self.grid_spacing ** 3
+		# volume adjustment ratio grid; contains the volume adjustment ratio per each bin in the expected grid
+		vol_adjust_ratio_grid = (dV_xyz / dV_ang).reshape(observed_grid_shape)
+
+		if self.printout:
+			print('Number of bins in r:', N_bins_r)
+			print('Number of bins in alpha:', N_bins_alpha)
+			print('Number of bins in delta:', N_bins_delta)
+			print('Volume adjustment ratio grid shape:', vol_adjust_ratio_grid.shape)
+
+		return vol_adjust_ratio_grid, d_r, d_alpha, d_delta, N_bins_r, N_bins_alpha, N_bins_delta
+
+
+
+	def _alpha_delta_r_projections_from_grid(self, grid: np.ndarray, N_bins_x: int, N_bins_y: int, N_bins_z: int, 
+		sky_coords_grid: np.ndarray, N_bins_alpha: int, N_bins_delta: int, N_bins_r: int) -> (np.ndarray, np.ndarray):
+		
+		alpha_delta_grid = np.zeros((N_bins_alpha, N_bins_delta))
+		r_grid = np.zeros((N_bins_r,))
+		for i in range(N_bins_x):
+			for j in range(N_bins_y):
+				for k in range(N_bins_z):
+					alpha_delta_grid[sky_coords_grid[i, j, k, 0], sky_coords_grid[i, j, k, 1]] += grid[i, j, k]
+					r_grid[sky_coords_grid[i, j, k, 2]] += grid[i, j, k]
+
+		return alpha_delta_grid, r_grid
+
+
+
+	def find_centers(self, backsub: bool = False):
+		"""
+		Identifies BAO centers by applying the voting procedure.
+		Applies vote threshold and saves the found centers list as .fits catalog.
+		"""
+
+		self._vote(backsub)
+		
 		centers_indices = np.asarray(self.centers_grid >= self.vote_threshold).nonzero()
 		self.C_weights = self.centers_grid[centers_indices]
 		delattr(self, 'centers_grid')
-		centers_bin_coords = np.array([(self.density_grid_edges[i][:-1] + self.density_grid_edges[i][1:]) / 2 for i in range(len(self.density_grid_edges))])
+
+		# calculates center coords to be exactly at the center of their respective bins
+		centers_bin_coords = np.array([(self.density_grid_edges[i][:-1] + self.density_grid_edges[i][1:]) / 2 
+			for i in range(len(self.density_grid_edges))])
 		delattr(self, 'density_grid_edges')
 		C_xyzs = np.array([centers_bin_coords[i][centers_indices[i]] for i in range(len(centers_indices))])
 		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, self.LUT_redshifts)

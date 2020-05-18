@@ -29,6 +29,8 @@ def main():
 		help='If this argument is present, the kernel radius will be set to the value entered as argument.')
 	parser.add_argument('-t', '--vote_threshold', type=float, default=0.,
 		help='If this argument is present, centers with number of votes smaller than given argument will be discarded from .fits output.')
+	parser.add_argument('-b', '--background_subtract', action='store_true',
+		help='If this argument is present, the CenterFinder will subtract the background from the galaxy density grid before voting.')
 	parser.add_argument('-p', '--params_file', type=str, default='params.json', 
 		help='If this argument is present, the cosmological parameters will be loaded from file given as argument.')
 	parser.add_argument('-s', '--save', action='store_true', 
@@ -47,8 +49,9 @@ def main():
 		except FileExistsError:
 			pass
 
-	cf = CenterFinder(args.file, args.kernel_radius, args.vote_threshold, params_file=args.params_file, save=args.save)
-	cf.find_centers()
+	cf = CenterFinder(args.file, args.kernel_radius, args.vote_threshold, 
+						params_file=args.params_file, save=args.save, printout=args.verbose)
+	cf.find_centers(backsub = args.background_subtract)
 
 
 
