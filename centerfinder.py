@@ -1,9 +1,25 @@
+"""
+Copyright (C) 2020 Gebri Mishtaku
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses.
+"""
+
 import os
 import json
 import numpy as np
 from astropy.io import fits
 from scipy.signal import fftconvolve
-
 from utils import *
 
 
@@ -79,7 +95,6 @@ class CenterFinder(object):
 
 
 
-
 	def _vote(self, background_subtract: bool = False, plot: bool = False):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
@@ -117,18 +132,6 @@ class CenterFinder(object):
 		if self.save:
 			np.save(self.savename + f'centers_grid_r_{self.kernel_radius}_no_cut.npy', 
 				self.centers_grid)
-
-
-
-
-		# if plot:
-		# 	voted_centers_coords = (observed_grid_edges[i][np.where(observed_grid >= self.vote_threshold)[i]] 
-		# 													for i in range(len(density_grid_edges)))
-		# 	plot_grid_with_true_centers(voted_centers_coords, galaxies_cartesian, 78,
-		# 		vote_threshold=self.vote_threshold, savename=self.filename + '.png')
-
-		# return observed_grid, observed_grid_edges, galaxies_cartesian
-
 
 
 
