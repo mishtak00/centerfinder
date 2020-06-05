@@ -39,7 +39,7 @@ Add the --save or -s argument to save outputs in a new file called "out" (create
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr9.json -s
 ```
 
-Add the --verbose or -v argument to have sanity checks and feedback on the running process printed to standard output as the program runs in exchange for *slightly* degraded performance (some of these checks are sums over large grids):
+Add the --verbose or -v argument to have sanity checks and feedback on the running process printed to standard output as the program runs:
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr9.json -s -v
 ```
