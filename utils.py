@@ -95,11 +95,13 @@ def sky2cartesian(ra: np.array, dec: np.array, redshift: np.array, LUT_radii) ->
 	return xs, ys, zs
 
 
-def cartesian2sky(xs: np.array, ys: np.array, zs: np.array, LUT_redshifts) -> (np.array, np.array, np.array, np.array):
+def cartesian2sky(xs: np.array, ys: np.array, zs: np.array, LUT_redshifts, 
+	ramin: float, ramax: float) -> (np.array,)*4:
 	radii = (xs ** 2 + ys ** 2 + zs ** 2) ** 0.5
 	redshift = np.array(LUT_redshifts(radii))
 	dec = np.rad2deg(np.arcsin(zs / radii))
-	ra = np.rad2deg(np.arctan(ys / xs)) #+ 180. # TODO: problem here?
+	rafix = np.round((ramin+ramax)/2 //90) *90
+	ra = np.rad2deg(np.arctan(ys / xs)) + rafix
 	return ra, dec, redshift, radii
 
 

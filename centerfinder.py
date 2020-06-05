@@ -171,7 +171,13 @@ class CenterFinder(object):
 		to use the beforehand-calculated interpolation lookup table to find the redshifts from the radii.
 		"""
 		bin_centers_ra, bin_centers_dec, _, bin_centers_radii = \
-			cartesian2sky(bin_centers_xs, bin_centers_ys, bin_centers_zs, self.LUT_redshifts)
+			cartesian2sky(bin_centers_xs, 
+							bin_centers_ys, 
+							bin_centers_zs, 
+							self.LUT_redshifts, 
+							self.G_ra.min(), 
+							self.G_ra.max())
+
 		del bin_centers_xs, bin_centers_ys, bin_centers_zs
 		if self.printout:
 			print('Number of bin centers in sky coordinates:', len(bin_centers_ra))
@@ -314,7 +320,10 @@ class CenterFinder(object):
 			for i in range(len(self.density_grid_edges))])
 		delattr(self, 'density_grid_edges')
 		C_xyzs = np.array([centers_bin_coords[i][centers_indices[i]] for i in range(len(centers_indices))])
-		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, self.LUT_redshifts)
+		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, 
+																	self.LUT_redshifts,
+																	self.G_ra.min(),
+																	self.G_ra.max())
 		
 		if self.save:
 			savename = self.savename + f'found_centers_r_{self.kernel_radius}_cut_{self.vote_threshold}.fits'
