@@ -52,8 +52,17 @@ class CenterFinder(object):
 
 		self.G_radii = self.LUT_radii(self.G_redshift)
 
+		print(self)
 
-	""" add repr here """
+
+	def __str__(self):
+		return 'CenterFinder object\n'\
+				f'Galaxy data file: {self.filename}\n'\
+				f'Kernel radius: {self.kernel_radius}\n'\
+				f'Vote threshold: {self.vote_threshold}\n'\
+				f'RA range: {self.G_ra.min()} - {self.G_ra.max()}\n'\
+				f'DEC range: {self.G_dec.min()} - {self.G_dec.max()}\n'\
+				f'Z range: {self.G_redshift.min()} - {self.G_redshift.max()}'
 
 
 	def _kernel(self, additional_thickness: float = 0., show_kernel: bool = False) -> np.ndarray:
