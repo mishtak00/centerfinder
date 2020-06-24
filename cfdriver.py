@@ -29,6 +29,8 @@ def main():
 		help='If this argument is present, the kernel radius will be set to the value entered as argument.')
 	parser.add_argument('-t', '--vote_threshold', type=float, default=0.,
 		help='If this argument is present, centers with number of votes smaller than given argument will be discarded from .fits output.')
+	parser.add_argument('-w', '--weighted_input', action='store_true',
+		help='If this argument is present, CenterFinder will try to read a fourth column from input data and interpret said values as weights.')
 	parser.add_argument('-b', '--background_subtract', action='store_true',
 		help='If this argument is present, the CenterFinder will subtract the background from the galaxy density grid before voting.')
 	parser.add_argument('-p', '--params_file', type=str, default='params.json', 
@@ -50,7 +52,8 @@ def main():
 			pass
 
 	cf = CenterFinder(args.file, args.kernel_radius, args.vote_threshold, 
-						params_file=args.params_file, save=args.save, printout=args.verbose)
+						wtd=args.weighted_input, params_file=args.params_file, 
+						save=args.save, printout=args.verbose)
 	cf.find_centers(backsub = args.background_subtract)
 
 

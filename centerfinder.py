@@ -24,10 +24,10 @@ from utils import *
 
 
 
-class CenterFinder(object):
+class CenterFinder():
 
 	def __init__(self, galaxy_file: str, kernel_radius: float, vote_threshold: float, 
-		g_wtd: bool = False, params_file: str = None, save: bool = False, printout: bool = False):
+		wtd: bool = False, params_file: str = None, save: bool = False, printout: bool = False):
 
 		self.kernel_radius = kernel_radius
 		self.vote_threshold = vote_threshold
@@ -39,7 +39,7 @@ class CenterFinder(object):
 		self.printout = printout
 
 		# loads galaxy data arrays
-		if not g_wtd:
+		if not wtd:
 			self.G_ra, self.G_dec, self.G_redshift = load_data(galaxy_file)
 			self.G_weights = np.ones(len(self.G_ra), dtype=float)
 		else:
@@ -122,7 +122,7 @@ class CenterFinder(object):
 			print('Histogramming completed successfully...')
 			print('Density grid shape:', density_grid.shape)
 
-		# makes background grid and subtracts it from the density grid
+		# makes expected grid and subtracts it from the density grid
 		if backsub:
 			background = self._project_and_sample(density_grid, self.density_grid_edges)
 			density_grid -= background
