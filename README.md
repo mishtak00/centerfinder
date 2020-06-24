@@ -12,7 +12,7 @@ source virtualenv/bin/activate
 pip install -r requirements.txt
 ```
 
-CenterFinder expects its input data in Astropy's FITS format (python recarrays). It reads in a 3 or 4-column TableHDU depending on whether the input has a 4th column whose values are to serve as weights.
+CenterFinder expects its input data in Astropy's FITS format (python recarrays). It reads in a 3 or 4-column TableHDU depending on whether the input has a 4th column whose values are to serve as weights. The principal output of CenterFinder is a 4-column .fits table that contains location and weight information on each found baryon acoustic oscillation center. Each row is a 4-tuple of the right ascension, declination, redshift and weight of a center.
 
 Additionally, the program expects a JSON file named 'params.json'. The 'params_cmassdr9.json' file has been given here as a template parameters file. This file is expected to contain select cosmological parameters as well as a crucial class variable for CenterFinder: grid_spacing. Grid spacing is the side length of each cubic bin in the big grids that represent histograms in real space in CenterFinder. The latter is suggested to be kept between 5 and 10 h-1Mpc during testing stages, selecting values under 5 only when more refined analysis is needed. CenterFinder's runtime is inversely proportional to the cube of this variable, i.e. linear in grid volume.
 
@@ -32,7 +32,7 @@ To subtract the expected grid from the galaxy density grid, call the --backgroun
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b
 ```
 
-To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote nr as shown below. The default threshold is 0 (no cutting by vote number, every centers grid is preserved).
+To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote number. The default threshold is 0 (no cutting by vote number, every bin in the centers grid is preserved).
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b -t 170
 ```
