@@ -18,38 +18,38 @@ Additionally, the program expects a JSON file named 'params.json'. The 'params_c
 
 CenterFinder's main routine accepts weighted or unweighted input and deals with both cases accordingly. Run CenterFinder on weighted input through the -w or --weighted_input argument. In this case, the program expects a 4-column table. Otherwise, just omit it and CenterFinder will treat each input data point read as having unit weight. A 3-column BinTableHDU containing CMASS DR9 mock data has been provided here as a test case.
 
-To run the voting procedure on unweighted input, just call the --kernel_radius or -r argument followed by the desired test radius:
+To run the voting procedure on unweighted input, just call the --kernel_radius or -r argument followed by the desired test radius. This refers to the "2.2.1 Galaxy Count" portion of the paper.
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143
 ```
-To run the voting procedure on weighted input, call the -w argument with the -r argument followed by the desired test radius:
+To run the voting procedure on weighted input, call the -w argument with the -r argument followed by the desired test radius. This refers to the "2.2.2 Weighted Count" portion of the paper.
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -w -r 143
 ```
 
-To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote nr as shown below. The default threshold is 0 (no cutting by vote number, every centers grid is preserved).
+To subtract the expected grid from the galaxy density grid, call the --background_subtract or -b argument like below. This refers to the "2.2.3 Density Contrast" portion of the paper. The default voting procedure won't apply background subtraction unless the user requests it.
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b
 ```
 
-To subtract the background from the galaxy density grid, call the --background_subtract or -b argument like below. The default voting procedure won't apply background subtraction unless the user requests it.
+To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote nr as shown below. The default threshold is 0 (no cutting by vote number, every centers grid is preserved).
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b -t 170
 ```
 
 Add the --params_file or -p argument to change the default file from which the cosmological parameters are loaded to a new file whose name is given as argument:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr8.json
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b -t 170 -p params_cmassdr8.json
 ```
 
 Add the --save or -s argument to save outputs in a new file called "out" (created automatically inside current directory):
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr9.json -s
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b -t 170 -p params_cmassdr9.json -s
 ```
 
 Add the --verbose or -v argument to have sanity checks and feedback on the running process printed to standard output as the program runs:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -t 170 -b -p params_cmassdr9.json -s -v
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -b -t 170 -p params_cmassdr9.json -s -v
 ```
 
 To deactivate the virtual environment once the job has finished:
