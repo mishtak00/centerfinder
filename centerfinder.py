@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses.
 import os
 import json
 import numpy as np
+from math import inf
 from astropy.io import fits
 from scipy.signal import fftconvolve
 from utils import *
@@ -26,8 +27,9 @@ from utils import *
 
 class CenterFinder():
 
-	def __init__(self, galaxy_file: str, kernel_radius: float, vote_threshold: float, 
-		wtd: bool, params_file: str, save: bool, printout: bool):
+	def __init__(self, galaxy_file: str, 
+		wtd: bool, params_file: str, save: bool, printout: bool,
+		kernel_radius: float = 108., vote_threshold: float = -inf):
 
 		self.kernel_radius = kernel_radius
 		self.vote_threshold = vote_threshold
@@ -48,11 +50,10 @@ class CenterFinder():
 		# gets cosmology and other hyperparameters
 		self.cosmology, self.grid_spacing = load_hyperparameters(params_file)
 		# calculates lookup tables for fast conversion from r to z and vice versa
-		self.LUT_radii, self.LUT_redshifts = interpolate_r_z(self.G_redshift.min(), self.G_redshift.max(), self.cosmology)
+		self.LUT_radii, self.LUT_redshifts = interpolate_r_z(self.G_redshift.min(), 
+			self.G_redshift.max(), self.cosmology)
 
 		self.G_radii = self.LUT_radii(self.G_redshift)
-
-		print(self)
 
 
 	def __str__(self):
@@ -63,6 +64,14 @@ class CenterFinder():
 				f'RA range: [{self.G_ra.min()}, {self.G_ra.max()}]\n'\
 				f'DEC range: [{self.G_dec.min()}, {self.G_dec.max()}]\n'\
 				f'Z range: [{self.G_redshift.min()}, {self.G_redshift.max()}]'
+
+
+	def set_kernel_radius(self, kr: float):
+		self.kernel_radius = kr
+
+
+	def set_vote_threshold(self, vt: float):
+		self.vote_threshold = vt
 
 
 	def _kernel(self, additional_thickness: float = 0., show_kernel: bool = False) -> np.ndarray:
@@ -171,7 +180,7 @@ class CenterFinder():
 		bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs = \
 			np.array([(grid_edges[i][:-1] + grid_edges[i][1:]) / 2 for i in range(len(grid_edges))])
 
-		# TODO: remove unncessary
+		# TODO: remove, unncessary
 		# if self.save:
 		# 	np.save(self.savename + '_xbins.npy', bin_centers_edges_xs)
 		# 	np.save(self.savename + '_ybins.npy', bin_centers_edges_ys)
@@ -185,10 +194,14 @@ class CenterFinder():
 		if self.printout:
 			print('Number of bin centers in cartesian coordinates:', len(bin_centers_xs))
 		"""
-		Why can we be sure that it is okay to interpolate the radii and redshift values for these bin centers coordinates?
-		Because we know that the range of values of the bin centers is exactly in between the min and the max of the grid bin edges x, y, z.
-		The radii come from the 3d euclidian distance, which preserves this relationship (convex function of x,y,z), and thus it is fine
-		to use the beforehand-calculated interpolation lookup table to find the redshifts from the radii.
+		Why can we be sure that it is okay to interpolate the radii 
+		and redshift values for these bin centers coordinates?
+		Because we know that the range of values of the bin centers 
+		is exactly in between the min and the max of the grid bin 
+		edges x, y, z. The radii come from the 3d euclidian distance, 
+		which preserves this relationship (convex function of x,y,z), 
+		and thus it is fine to use the beforehand-calculated interpolation 
+		lookup table to find the redshifts from the radii.
 		"""
 		bin_centers_ra, bin_centers_dec, _, bin_centers_radii = \
 			cartesian2sky(bin_centers_xs, 
@@ -197,7 +210,6 @@ class CenterFinder():
 							self.LUT_redshifts, 
 							self.G_ra.min(), 
 							self.G_ra.max())
-
 		del bin_centers_xs, bin_centers_ys, bin_centers_zs
 		if self.printout:
 			print('Number of bin centers in sky coordinates:', len(bin_centers_ra))
@@ -214,9 +226,11 @@ class CenterFinder():
 		# alpha-delta and z counts
 		N_bins_x, N_bins_y, N_bins_z = grid.shape[0], grid.shape[1], grid.shape[2]
 		sky_coords_grid_shape = (N_bins_x, N_bins_y, N_bins_z, 3)  # need to store a triple at each grid bin
-		sky_coords_grid = np.array(list(zip(bin_centers_ra, bin_centers_dec, bin_centers_radii))).reshape(sky_coords_grid_shape)
+		sky_coords_grid = np.array(list(zip(bin_centers_ra, bin_centers_dec, 
+			bin_centers_radii))).reshape(sky_coords_grid_shape)
 		if self.printout:
-			print('Shape of grid containing sky coordinates of observed grid\'s bin centers:', sky_coords_grid.shape)
+			print('Shape of grid containing sky coordinates of observed grid\'s bin centers:', 
+				sky_coords_grid.shape)
 
 		# getting some variables ready for the projection step
 		alpha_min = bin_centers_ra.min()
@@ -233,13 +247,14 @@ class CenterFinder():
 		sky_coords_grid = sky_coords_grid.astype(int)
 
 		# TODO: the condition here should be >= rather than ==
-		# the following fixes any indices that lie beyond the outer walls of the sky grid by pulling them 1 index unit back
+		# the following fixes any indices that lie beyond the outer 
+		# walls of the sky grid by pulling them to the wall
 		sky_coords_grid[:, :, :, 0][sky_coords_grid[:, :, :, 0] == N_bins_alpha] = N_bins_alpha - 1
 		sky_coords_grid[:, :, :, 1][sky_coords_grid[:, :, :, 1] == N_bins_delta] = N_bins_delta - 1
 		sky_coords_grid[:, :, :, 2][sky_coords_grid[:, :, :, 2] == N_bins_r] = N_bins_r - 1
 
-		alpha_delta_grid, r_grid = self._alpha_delta_r_projections_from_grid(grid, N_bins_x, N_bins_y, N_bins_z, 
-			sky_coords_grid, N_bins_alpha, N_bins_delta, N_bins_r)
+		alpha_delta_grid, r_grid = self._alpha_delta_r_projections_from_grid(grid, 
+			N_bins_x, N_bins_y, N_bins_z, sky_coords_grid, N_bins_alpha, N_bins_delta, N_bins_r)
 		if self.printout:
 			print('Shape of alpha-delta grid:', alpha_delta_grid.shape)
 			print('Shape of r grid:', r_grid.shape)
@@ -247,7 +262,8 @@ class CenterFinder():
 			print('Minimum number of voters per single bin in alpha-delta grid:', alpha_delta_grid.min())
 			print('Maximum number of voters per single bin in r grid:', r_grid.max())
 			print('Minimum number of voters per single bin in r grid:', r_grid.min())
-			print('N_tot_observed = N_tot_alpha_delta = N_tot_r:', N_tot == np.sum(alpha_delta_grid) == np.sum(r_grid))
+			print('N_tot_observed = N_tot_alpha_delta = N_tot_r:', 
+				N_tot == np.sum(alpha_delta_grid) == np.sum(r_grid))
 
 		# TODO: meshgrid this
 		expected_grid = np.array([[[alpha_delta_grid[sky_coords_grid[i, j, k, 0], sky_coords_grid[i, j, k, 1]]
@@ -266,7 +282,7 @@ class CenterFinder():
 		# if self.save:
 		# 	np.save(self.savename + "_exp_grid.npy", expected_grid)
 
-		return expected_grid#, (bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs)
+		return expected_grid
 
 
 
@@ -329,6 +345,9 @@ class CenterFinder():
 		Applies vote threshold and saves the found centers list as .fits catalog.
 		"""
 
+		if self.printout:
+			print(self)
+
 		self._vote(dencon=dencon, overden=overden)
 		
 		centers_indices = np.asarray(self.centers_grid >= self.vote_threshold).nonzero()
@@ -339,7 +358,6 @@ class CenterFinder():
 			print('Number of found centers before vote cut:', precut)
 			print('Number of found centers after vote cut:', postcut)
 		delattr(self, 'centers_grid')
-		
 
 		# calculates center coords to be exactly at the center of their respective bins
 		centers_bin_coords = np.array([(self.density_grid_edges[i][:-1] + self.density_grid_edges[i][1:]) / 2 

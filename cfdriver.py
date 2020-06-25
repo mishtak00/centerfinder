@@ -16,7 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses.
 """
 
 import os
-from math import inf
+# from math import inf
 from argparse import ArgumentParser
 from centerfinder import CenterFinder
 
@@ -26,9 +26,9 @@ def main():
 	parser = ArgumentParser(description="~~~~~~~~~~~~~~~~~ ( * ) Center Finder ( * ) ~~~~~~~~~~~~~~~~~")
 	parser.add_argument('file', metavar='GALAXY_FILE', type=str, 
 		help='Name of fits file with the galaxy data.')
-	parser.add_argument('-r', '--kernel_radius', type=float, default=108., 
+	parser.add_argument('-r', '--kernel_radius', type=float, 
 		help='If this argument is present, the kernel radius will be set to the value entered as argument.')
-	parser.add_argument('-t', '--vote_threshold', type=float, default=-inf,
+	parser.add_argument('-t', '--vote_threshold', type=float,
 		help='If this argument is present, centers with number of votes smaller than given argument will be discarded from .fits output.')
 	parser.add_argument('-w', '--weighted_input', action='store_true',
 		help='If this argument is present, CenterFinder will try to read a fourth column from input data and interpret said values as weights.')
@@ -55,9 +55,13 @@ def main():
 		except FileExistsError:
 			pass
 
-	cf = CenterFinder(args.file, args.kernel_radius, 
-					args.vote_threshold, args.weighted_input, 
-					args.params_file, args.save, args.verbose)
+	cf = CenterFinder(args.file, args.weighted_input, 
+		args.params_file, args.save, args.verbose)
+	if args.kernel_radius is not None:
+		cf.set_kernel_radius(args.kernel_radius)
+	if args.vote_threshold is not None:
+		cf.set_vote_threshold(args.vote_threshold)
+
 	cf.find_centers(dencon=args.density_contrast,
 					overden=args.overdensity)
 
