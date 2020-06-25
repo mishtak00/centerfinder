@@ -1,5 +1,11 @@
 # CenterFinder
 
+### Contents
+* [Setup](#setup)
+* [I/O](#io)
+* [Run](#run)
+* [Exit](#exit)
+
 ### Setup
 CenterFinder is written purely in Python 3. Please make sure to have it installed in your system before proceeding with the rest of these instructions. This readme assumes that the `python` keyword has been aliased to `python3`. This readme contains code that's meant for Unix-based terminals (Mac, Linux...). Windows analogues may be *slightly* different. 
 
