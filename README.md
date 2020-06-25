@@ -14,7 +14,7 @@ Clone this repository by running the following in the terminal:
 git clone https://github.com/mishtak00/centerfinder
 ```
 
-*Optional, __recommended__:* Create, activate and configure a virtual environment that's ready to host CenterFinder by running the following from the terminal while inside the centerfinder directory:
+*Optional, __recommended__:* Create and activate a virtual environment to host CenterFinder by running the following from the terminal while inside the centerfinder directory:
 ```
 python -m venv cf_env
 source cf_env/bin/activate
