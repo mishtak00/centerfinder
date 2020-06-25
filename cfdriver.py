@@ -16,7 +16,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses.
 """
 
 import os
-# from math import inf
 from argparse import ArgumentParser
 from centerfinder import CenterFinder
 

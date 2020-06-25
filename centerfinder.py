@@ -27,8 +27,7 @@ from utils import *
 
 class CenterFinder():
 
-	def __init__(self, galaxy_file: str, 
-		wtd: bool, params_file: str, save: bool, printout: bool,
+	def __init__(self, galaxy_file: str, wtd: bool, params_file: str, save: bool, printout: bool,
 		kernel_radius: float = 108., vote_threshold: float = -inf):
 
 		self.kernel_radius = kernel_radius
