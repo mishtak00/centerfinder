@@ -16,6 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses.
 """
 
 import os
+from math import inf
 from argparse import ArgumentParser
 from centerfinder import CenterFinder
 
@@ -27,12 +28,15 @@ def main():
 		help='Name of fits file with the galaxy data.')
 	parser.add_argument('-r', '--kernel_radius', type=float, default=108., 
 		help='If this argument is present, the kernel radius will be set to the value entered as argument.')
-	parser.add_argument('-t', '--vote_threshold', type=float, default=0.,
+	parser.add_argument('-t', '--vote_threshold', type=float, default=-inf,
 		help='If this argument is present, centers with number of votes smaller than given argument will be discarded from .fits output.')
 	parser.add_argument('-w', '--weighted_input', action='store_true',
 		help='If this argument is present, CenterFinder will try to read a fourth column from input data and interpret said values as weights.')
-	parser.add_argument('-b', '--background_subtract', action='store_true',
+	back_or_over = parser.add_mutually_exclusive_group()
+	back_or_over.add_argument('-c', '--density_contrast', action='store_true',
 		help='If this argument is present, the CenterFinder will subtract the background from the galaxy density grid before voting.')
+	back_or_over.add_argument('-o', '--overdensity', action='store_true',
+		help='If this argument is present, the CenterFinder will subtract average density from the galaxy density grid before voting.')
 	parser.add_argument('-p', '--params_file', type=str, default='params.json', 
 		help='If this argument is present, the cosmological parameters will be loaded from file given as argument.')
 	parser.add_argument('-s', '--save', action='store_true', 
@@ -51,10 +55,11 @@ def main():
 		except FileExistsError:
 			pass
 
-	cf = CenterFinder(args.file, args.kernel_radius, args.vote_threshold, 
-						wtd=args.weighted_input, params_file=args.params_file, 
-						save=args.save, printout=args.verbose)
-	cf.find_centers(backsub = args.background_subtract)
+	cf = CenterFinder(args.file, args.kernel_radius, 
+					args.vote_threshold, args.weighted_input, 
+					args.params_file, args.save, args.verbose)
+	cf.find_centers(dencon=args.density_contrast,
+					overden=args.overdensity)
 
 
 

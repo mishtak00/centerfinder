@@ -27,7 +27,7 @@ from utils import *
 class CenterFinder():
 
 	def __init__(self, galaxy_file: str, kernel_radius: float, vote_threshold: float, 
-		wtd: bool = False, params_file: str = None, save: bool = False, printout: bool = False):
+		wtd: bool, params_file: str, save: bool, printout: bool):
 
 		self.kernel_radius = kernel_radius
 		self.vote_threshold = vote_threshold
@@ -60,9 +60,9 @@ class CenterFinder():
 				f'Galaxy data file: {self.filename}\n'\
 				f'Kernel radius: {self.kernel_radius}\n'\
 				f'Vote threshold: {self.vote_threshold}\n'\
-				f'RA range: {self.G_ra.min()} - {self.G_ra.max()}\n'\
-				f'DEC range: {self.G_dec.min()} - {self.G_dec.max()}\n'\
-				f'Z range: {self.G_redshift.min()} - {self.G_redshift.max()}'
+				f'RA range: [{self.G_ra.min()}, {self.G_ra.max()}]\n'\
+				f'DEC range: [{self.G_dec.min()}, {self.G_dec.max()}]\n'\
+				f'Z range: [{self.G_redshift.min()}, {self.G_redshift.max()}]'
 
 
 	def _kernel(self, additional_thickness: float = 0., show_kernel: bool = False) -> np.ndarray:
@@ -108,7 +108,7 @@ class CenterFinder():
 
 
 
-	def _vote(self, backsub: bool, plot: bool = False):
+	def _vote(self, dencon: bool = False, overden: bool = False, plot: bool = False):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
 		self.galaxies_cartesian = np.array(xyzs).T  # each galaxy is represented by (x, y, z)
@@ -123,27 +123,38 @@ class CenterFinder():
 			print('Density grid shape:', density_grid.shape)
 
 		# makes expected grid and subtracts it from the density grid
-		if backsub:
+		if dencon:
 			background = self._project_and_sample(density_grid, self.density_grid_edges)
 			density_grid -= background
 			del background
-			density_grid[density_grid < 0.] = 0.
-
+			density_grid[density_grid < 0.] = 0. # TODO: ask abt this
 			if self.printout:
 				print('Background subtraction completed successfully...')
-				print('Maximum number of votes per single bin:', density_grid.max())
-				print('Minimum number of votes per single bin:', density_grid.min())
+		
+		# calculates avg density of all nonempty grid cells of the 
+		# weighted density field and subtracts it from the density field
+		elif overden:
+			denavg = np.average(density_grid[density_grid!=0])
+			density_grid -= denavg
+			density_grid /= denavg
+			if self.printout:
+				print('Overdensity calculation completed successfully...')
+
+		if self.printout:
+			print('Minimum and maximum values of density field grid cells: '\
+				'[{}, {}]'.format(density_grid.min(), density_grid.max()))
 
 		# makes the kernel for scanning over the density grid
 		kernel_grid = self._kernel()
 
 		# this scans the kernel over the whole volume of the galaxy density grid
 		# calculates the tensor inner product of the two at each step
-		# and finally stores this value as the number of voters per that bin in the observed grid
+		# and finally stores this value as the number of voters per that bin in the centers grid
 		self.centers_grid = np.round(fftconvolve(density_grid, kernel_grid, mode='same'))
 		
 		if self.printout:
-			print('Observed grid shape:', self.centers_grid.shape)
+			print('Voting procedure completed successfully...')
+			print('Centers grid shape:', self.centers_grid.shape)
 			print('Maximum number of votes per single bin:', self.centers_grid.max())
 			print('Minimum number of votes per single bin:', self.centers_grid.min())
 
@@ -161,10 +172,10 @@ class CenterFinder():
 			np.array([(grid_edges[i][:-1] + grid_edges[i][1:]) / 2 for i in range(len(grid_edges))])
 
 		# TODO: remove unncessary
+		# if self.save:
 		# 	np.save(self.savename + '_xbins.npy', bin_centers_edges_xs)
 		# 	np.save(self.savename + '_ybins.npy', bin_centers_edges_ys)
 		# 	np.save(self.savename + '_zbins.npy', bin_centers_edges_zs)
-		# if self.save:
 
 		bin_centers_xs, bin_centers_ys, bin_centers_zs = np.array([(x, y, z) 
 			for x in bin_centers_edges_xs 
@@ -299,7 +310,7 @@ class CenterFinder():
 
 	def _alpha_delta_r_projections_from_grid(self, grid: np.ndarray, N_bins_x: int, N_bins_y: int, N_bins_z: int, 
 		sky_coords_grid: np.ndarray, N_bins_alpha: int, N_bins_delta: int, N_bins_r: int) -> (np.ndarray, np.ndarray):
-		
+
 		alpha_delta_grid = np.zeros((N_bins_alpha, N_bins_delta))
 		r_grid = np.zeros((N_bins_r,))
 		for i in range(N_bins_x):
@@ -312,17 +323,23 @@ class CenterFinder():
 
 
 
-	def find_centers(self, backsub: bool = False):
+	def find_centers(self, dencon: bool, overden: bool):
 		"""
 		Identifies BAO centers by applying the voting procedure.
 		Applies vote threshold and saves the found centers list as .fits catalog.
 		"""
 
-		self._vote(backsub)
+		self._vote(dencon=dencon, overden=overden)
 		
 		centers_indices = np.asarray(self.centers_grid >= self.vote_threshold).nonzero()
 		self.C_weights = self.centers_grid[centers_indices]
+		if self.printout:
+			precut = len(self.centers_grid[self.centers_grid!=0])
+			postcut = len(self.C_weights)
+			print('Number of found centers before vote cut:', precut)
+			print('Number of found centers after vote cut:', postcut)
 		delattr(self, 'centers_grid')
+		
 
 		# calculates center coords to be exactly at the center of their respective bins
 		centers_bin_coords = np.array([(self.density_grid_edges[i][:-1] + self.density_grid_edges[i][1:]) / 2 
@@ -334,9 +351,9 @@ class CenterFinder():
 																	self.G_ra.min(),
 																	self.G_ra.max())
 		
-		if self.save:
-			savename = self.savename + f'found_centers_r_{self.kernel_radius}_cut_{self.vote_threshold}.fits'
-			save_data_weighted(savename, self.C_ra, self.C_dec, self.C_redshift, self.C_weights)
+		# outputs centers catalog in skycoords+weights to out folder
+		savename = self.savename + f'found_centers_r_{self.kernel_radius}_cut_{self.vote_threshold}.fits'
+		save_data_weighted(savename, self.C_ra, self.C_dec, self.C_redshift, self.C_weights)
 
 
 
