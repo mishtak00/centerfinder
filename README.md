@@ -97,7 +97,7 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -c -t 170 -p params_cmas
 ```
 
 #### Running on a supercomputer
-Applying the Density Contrast method to the provided catalog as described in the paper will run in around 20 minutes on a 2019 Intel i9 processor with 32Gb of memory. Thus, running CenterFinder on computational clusters for high performance computing is not a necessity, but if need be, the bash script batch.sh is provided in this repository as a general guideline for running the program on a high performance computer.
+Applying the Density Contrast method to the provided catalog as described in the paper will run in around 20 minutes on a 2019 Intel i9 processor with 32GB of memory, so running CenterFinder on computational clusters for high performance computing is not a necessity. In any case, the bash script batch.sh is provided in this repository as a general guideline for running the program on a high performance computer.
 
 
 
