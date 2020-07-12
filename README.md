@@ -50,13 +50,13 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -r 143
 ```
 
 #### Weighted Input
-To run the voting procedure on weighted input, call the -w argument with the -r argument followed by the desired test radius. This refers to the *"2.2.2 Weighted Count"* portion of the paper.
+To run the voting procedure on weighted input, call the -w argument with the -r argument followed by the desired test radius.
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -w -r 143
 ```
 
 #### Density Contrast
-To subtract the expected grid from the galaxy density grid, call the --density_contrast or -c argument like below. The default voting procedure won't apply background subtraction unless the user requests it. This is the method is used in *"2.2 The Density Field"* portion of the paper.
+To subtract the expected grid from the galaxy density grid, call the --density_contrast or -c argument like below. The default voting procedure won't apply background subtraction unless the user requests it. This is the method described in *"2.2 The Density Field"* portion of the paper.
 ```
 python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -c
 ```
