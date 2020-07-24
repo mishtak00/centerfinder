@@ -35,8 +35,7 @@ class CenterFinder():
 
 		self.filename = '.'.join(galaxy_file.split('.')[:-1])
 		self.save = save
-		if self.save:
-			self.savename = f'out_{self.filename}/'
+		self.savename = f'out_{self.filename}/'
 		self.printout = printout
 
 		# loads galaxy data arrays
@@ -363,14 +362,19 @@ class CenterFinder():
 			for i in range(len(self.density_grid_edges))])
 		delattr(self, 'density_grid_edges')
 		C_xyzs = np.array([centers_bin_coords[i][centers_indices[i]] for i in range(len(centers_indices))])
-		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, 
-																	self.LUT_redshifts,
-																	self.G_ra.min(),
-																	self.G_ra.max())
+		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, self.LUT_redshifts, 
+																self.G_ra.min(), self.G_ra.max())
 		
 		# outputs centers catalog in skycoords+weights to out folder
 		savename = self.savename + f'found_centers_r_{self.kernel_radius}_cut_{self.vote_threshold}.fits'
 		save_data_weighted(savename, self.C_ra, self.C_dec, self.C_redshift, self.C_weights)
+
+
+
+	def plot_slice(self, *args):
+		import plotter
+		plotter._plot_slice(self, args)
+
 
 
 

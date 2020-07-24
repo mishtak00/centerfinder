@@ -31,28 +31,29 @@ def main():
 		help='If this argument is present, centers with number of votes smaller than given argument will be discarded from .fits output.')
 	parser.add_argument('-w', '--weighted_input', action='store_true',
 		help='If this argument is present, CenterFinder will try to read a fourth column from input data and interpret said values as weights.')
-	back_or_over = parser.add_mutually_exclusive_group()
-	back_or_over.add_argument('-c', '--density_contrast', action='store_true',
+	con_or_over = parser.add_mutually_exclusive_group()
+	con_or_over.add_argument('-c', '--density_contrast', action='store_true',
 		help='If this argument is present, the CenterFinder will subtract the background from the galaxy density grid before voting.')
-	back_or_over.add_argument('-o', '--overdensity', action='store_true',
+	con_or_over.add_argument('-o', '--overdensity', action='store_true',
 		help='If this argument is present, the CenterFinder will subtract average density from the galaxy density grid before voting.')
 	parser.add_argument('-p', '--params_file', type=str, default='params.json', 
 		help='If this argument is present, the cosmological parameters will be loaded from file given as argument.')
 	parser.add_argument('-s', '--save', action='store_true', 
 		help='If this argument is present, grids and .fits output will be automatically saved to an \'out\' folder.')
 	parser.add_argument('-v', '--verbose', action='store_true', 
-		help='If this argument is present, the progress of center-finder will be printed out to standard output.')
+		help='If this argument is present, the progress of CenterFinder will be printed out to standard output.')
+	parser.add_argument('-l', '--plot_slice', nargs='*', type=float,
+		help='If this argument is present, CenterFinder will plot a slice of the centers found with galaxies that voted for them superimposed.')
 	args = parser.parse_args()
 
 	# deletes the .fits extension
 	# allows for other '.'s in the args.file string
 	filename = '.'.join(args.file.split('.')[:-1])
 
-	if args.save:
-		try:
-			os.mkdir('out_{}'.format(filename))
-		except FileExistsError:
-			pass
+	try:
+		os.mkdir('out_{}'.format(filename))
+	except FileExistsError:
+		pass
 
 	cf = CenterFinder(args.file, args.weighted_input, 
 		args.params_file, args.save, args.verbose)
@@ -63,8 +64,14 @@ def main():
 
 	cf.find_centers(dencon=args.density_contrast,
 					overden=args.overdensity)
+	if args.plot_slice is not None:
+		cf.plot_slice(*args.plot_slice)
 
 
 
 if __name__ == '__main__':
 	main()
+
+
+
+
