@@ -81,7 +81,7 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -c -t 170
 #### Change the default hyperparameters file
 Add the --params_file or -p argument to change the default file from which the cosmological parameters are loaded to a new file whose name is given as argument:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -c -t 170 -p params_cmassdr8.json
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -c -t 170 -p params_cmassdr9.json
 ```
 
 #### Save additional output
