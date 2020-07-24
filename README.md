@@ -7,7 +7,7 @@
 * [I/O](#io)
 * [Run](#run)
 * [Options](#options)
-* [Exit](#exit)
+* [Plot](#plot)
 
 
 
@@ -29,6 +29,12 @@ You can choose any package manager for python to install CenterFinder's requirem
 ```
 pip install -r requirements.txt
 ```
+
+If you are running CenterFinder in a virtual environment, don't forget to deactivate the environment once the job has finished:
+```
+deactivate
+```
+
 
 
 ## I/O
@@ -101,8 +107,24 @@ Applying the Density Contrast method to the provided catalog as described in the
 
 
 
-## Exit
-If you are running CenterFinder in a virtual environment as advised in [Setup](#setup), deactivate the virtual environment once the job has finished:
+## Plot
+You are able to plot a view of the results of CenterFinder that helps visualize its output just like the picture in section 3.6 of the paper. This can be done by adding the --plot_slice or -l argument to your command to CenterFinder. The picture will be saved in 300dpi png format in the outputs folder. Currently, circles are drawn around histogram cells that are in the upper 20 percentile by center density. In spatial regions where this would draw more than 20 on-screen circles, this density floor is risen until there are only 20 on-screen circles or less in order to preserve a clean result.
+
+#### Whole space
+Just append the argument with nothing else to produce a plot of all centers found and galaxies in the space. This is not recommended because it will probably produce a messy result, but the option is there if needed.
 ```
-deactivate
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -p params_cmassdr9.json -s -l
 ```
+
+#### Redshift slice
+Add 2 trailing numbers to bound the centers and galaxies that will show up in the image by their redshift coordinate. The 1st will be read as the floor and 2nd will be read as the ceiling for the readshift values.
+```
+-l 0.51 0.52
+```
+
+#### All bound
+Add 6 trailing numbers to bound the centers and galaxies in the image by all their sky coordinates. The 1st, 2nd and 3rd pairs of numbers will be read as the redshift, right ascension and declination intervals, respectively. 
+```
+-l 0.51 0.52 110 130 10 30
+```
+
