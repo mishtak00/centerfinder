@@ -108,7 +108,7 @@ Applying the Density Contrast method to the provided catalog as described in the
 
 
 ## Plot
-You are able to plot a view of the results of CenterFinder that helps visualize its output just like the picture in section 3.6 of the paper. This can be done by adding the --plot_slice or -l argument to your command to CenterFinder. The picture will be saved in 300dpi png format in the outputs folder. Currently, circles are drawn around histogram cells that are in the upper 20 percentile by center density. In spatial regions where this would draw more than 20 on-screen circles, this density floor is risen until there are only 20 on-screen circles or less in order to preserve a clean result.
+You are able to plot a view of the results of CenterFinder that helps visualize its output just like the picture in section 3.6 of the paper. This can be done by adding the --plot_slice or -l argument to your command to CenterFinder. The picture will be saved in 300dpi png format in the outputs folder. Currently, circles are drawn around histogram cells that are in the upper 20 percentile by center density. In spatial regions where this would draw more than 20 on-screen circles, this density floor rises automatically until there are only 20 on-screen circles or less in order to preserve a clean result.
 
 #### Whole space
 Just append the argument with nothing else to produce a plot of all centers found and galaxies in the space. This is not recommended because it will probably produce a messy result, but the option is there if needed.
@@ -117,7 +117,7 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -r 143 -p params_cmassdr9.json 
 ```
 
 #### Redshift slice
-Add 2 trailing numbers to bound the centers and galaxies that will show up in the image by their redshift coordinate. The 1st will be read as the floor and 2nd will be read as the ceiling for the readshift values.
+Add 2 trailing numbers to bound the centers and galaxies that will show up in the image by their redshift coordinate. The 1st will be read as the floor and 2nd will be read as the ceiling for the readshift values. This is a great image to start with and then zoom in by binding RA and DEC as well, shown in the third portion of this section.
 ```
 -l 0.51 0.52
 ```
