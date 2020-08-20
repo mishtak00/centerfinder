@@ -33,8 +33,8 @@ def load_hyperparameters(params_file: str):
 		h_ = H0 / 100.
 		Omega_M = hp['Omega_M']
 		Omega_L = 1 - Omega_M
-		grid_spacing = hp['grid_spacing']  # Mpc/h
-	cosmology = c_over_H0, Omega_M, Omega_L
+		grid_spacing = hp['grid_spacing']  # h-1Mpc
+	cosmology = h_, c_over_H0, Omega_M, Omega_L
 	return cosmology, grid_spacing
 
 
@@ -59,18 +59,20 @@ def load_data_weighted(filename: str) -> (np.recarray,)*4:
 
 def save_data_weighted(filename: str, ra: np.array, dec: np.array, z: np.array, w: np.array):
 	# 'E' is the fits format for single-precision floating point
-	c_ra = fits.Column(name='ra', array=ra, format='E')
-	c_dec = fits.Column(name='dec', array=dec, format='E')
-	c_z = fits.Column(name='z', array=z, format='E')
-	c_w = fits.Column(name='wts', array=w, format='E')
-	t = fits.BinTableHDU.from_columns([c_ra, c_dec, c_z, c_w])
+	racol = fits.Column(name='ra', array=ra, format='E')
+	deccol = fits.Column(name='dec', array=dec, format='E')
+	zcol = fits.Column(name='z', array=z, format='E')
+	wcol = fits.Column(name='wts', array=w, format='E')
+	t = fits.BinTableHDU.from_columns([racol, deccol, zcol, wcol])
 	t.writeto(filename, overwrite=True)
 
 
 def z2r(z: float, cosmology: tuple) -> float:
-	# transforms observed redshift to radial distance
-	c_over_H0, Omega_M, Omega_L = cosmology
-	return c_over_H0 * integrate.quad(lambda zeta: (Omega_M * (1 + zeta)**3 + Omega_L)**-0.5, 0, z)[0]
+	"""Transforms observed redshift to radial distance. """
+	h_, c_over_H0, Omega_M, Omega_L = cosmology
+	# multiply and divide by lil h to transform from Mpc to h-1Mpc
+	const = h_ * c_over_H0
+	return const * integrate.quad(lambda zeta: (Omega_M * (1 + zeta)**3 + Omega_L)**-0.5, 0, z)[0]
 
 
 def interpolate_r_z(redshift_min: float, redshift_max: float, cosmology: tuple):
