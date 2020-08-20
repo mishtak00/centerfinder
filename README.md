@@ -123,7 +123,7 @@ Add 2 trailing numbers to bound the centers and galaxies that will show up in th
 ```
 
 #### All bound
-Add 6 trailing numbers to bound the centers and galaxies in the image by all their sky coordinates. The 1st, 2nd and 3rd pairs of numbers will be read as the redshift, right ascension and declination intervals, respectively. 
+Add 6 trailing numbers to bind the centers and galaxies in the image by all their sky coordinates. The 1st, 2nd and 3rd pairs of numbers will be read as the redshift, right ascension and declination intervals, respectively. 
 ```
 -l 0.51 0.52 110 130 10 30
 ```
