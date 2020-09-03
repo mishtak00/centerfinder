@@ -1,6 +1,6 @@
 # CenterFinder
 
-
+Please read the publication in [arXiv](https://arxiv.org/abs/2008.12793) before using this software.
 
 ## Contents
 * [Setup](#setup)
