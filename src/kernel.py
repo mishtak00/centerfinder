@@ -80,7 +80,11 @@ class Kernel:
 			else 0
 			for i in range(circumscribed_r_idx_units)])
 
-		print(step_func)
+		# normalization = 1 / integral
+		integral = sum(step_func)
+		step_func = step_func / integral
+
+		# print(step_func)
 
 		return np.array([[[
 			step_func[int(np.linalg.norm(np.array([i,j,k])-kernel_center))]
@@ -90,7 +94,9 @@ class Kernel:
 
 
 
-if __name__ == '__main__':
-	Kernel('step', 110, 5, True, True, 2)
+
+
+# if __name__ == '__main__':
+# 	Kernel('step', 110, 5, True, True, 2)
 
 
