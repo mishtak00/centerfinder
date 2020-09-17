@@ -21,7 +21,7 @@ import numpy as np
 from math import inf
 from astropy.io import fits
 from scipy.signal import fftconvolve
-from utils import *
+from .utils import *
 
 
 
