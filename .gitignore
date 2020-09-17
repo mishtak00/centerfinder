@@ -1,4 +1,4 @@
 # Mock data given for example run
 *.fits
 # Finder Desktop Services file
-*.DS_Store
+.DS_Store
