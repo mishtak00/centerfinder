@@ -22,15 +22,20 @@ from math import inf
 from astropy.io import fits
 from scipy.signal import fftconvolve
 from .utils import *
+from .kernel import Kernel
 
 
 
 class CenterFinder():
 
+
 	def __init__(self, galaxy_file: str, wtd: bool, params_file: str, save: bool, printout: bool,
-		kernel_radius: float = 108., vote_threshold: float = -inf):
+		kernel_radius: float = 108., kernel_type: str = 'step', 
+		kernel_args: list = [], vote_threshold: float = -inf):
 
 		self.kernel_radius = kernel_radius
+		self.kernel_type = kernel_type
+		self.kernel_args = kernel_args
 		self.vote_threshold = vote_threshold
 
 		self.filename = '.'.join(galaxy_file.split('.')[:-1])
@@ -54,6 +59,7 @@ class CenterFinder():
 		self.G_radii = self.LUT_radii(self.G_redshift)
 
 
+
 	def __str__(self):
 		return 'CenterFinder object\n'\
 				f'Galaxy data file: {self.filename}\n'\
@@ -64,58 +70,24 @@ class CenterFinder():
 				f'Z range: [{self.G_redshift.min()}, {self.G_redshift.max()}]'
 
 
+
 	def set_kernel_radius(self, kr: float):
 		self.kernel_radius = kr
+
+
+
+	def set_kernel_type(self, kt: str, args):
+		self.kernel_type = kt
+		self.kernel_args = args
+
 
 
 	def set_vote_threshold(self, vt: float):
 		self.vote_threshold = vt
 
 
-	def _kernel(self, additional_thickness: float = 0., show_kernel: bool = False) -> np.ndarray:
-		# this is the number of bins in each dimension axis
-		# this calculation ensures an odd numbered gridding
-		# the kernel construction has a distinct central bin on any given run
-		kernel_bin_count = int(2 * np.ceil(self.kernel_radius / self.grid_spacing) + 1)
 
-		# this is the kernel inscribed radius in index units
-		inscribed_r_idx_units = self.kernel_radius / self.grid_spacing
-		inscribed_r_idx_units_upper_bound = inscribed_r_idx_units + 0.5 + additional_thickness
-		inscribed_r_idx_units_lower_bound = inscribed_r_idx_units - 0.5 - additional_thickness
-
-		# central bin index, since the kernel is a cube this can just be one int
-		kernel_center_index = int(kernel_bin_count / 2)
-		kernel_center = np.array([kernel_center_index, ] * 3)
-
-		# this is where the magic happens: each bin at a radial distance of bao_radius from the
-		# kernel's center gets assigned a 1 and all other bins get a 0
-		kernel_grid = np.array([[[1 if (np.linalg.norm(np.array([i, j, k]) - kernel_center) 
-															>= inscribed_r_idx_units_lower_bound 
-									and np.linalg.norm(np.array([i, j, k]) - kernel_center) 
-															< inscribed_r_idx_units_upper_bound)
-								  else 0
-								  for k in range(kernel_bin_count)]
-								 for j in range(kernel_bin_count)]
-								for i in range(kernel_bin_count)])
-
-		if self.printout:
-			print('Kernel constructed successfully...')
-			print('Number of kernel bins that contain surface:', len(kernel_grid[kernel_grid == 1]))
-			print('Number of empty kernel bins:', len(kernel_grid[kernel_grid == 0]))
-
-		# this is here for future sanity checks, it shows the kernel in 3d
-		# with blue disks in kernel bins containing spherical surface
-		if show_kernel:
-			color = 'cornflowerblue'
-			fig, ax = plt.subplots(1, 1, subplot_kw={'projection': '3d'})
-			ax.scatter(*np.where(kernel_grid == 1), c=color)
-			plt.show()
-
-		return kernel_grid
-
-
-
-	def _vote(self, dencon: bool = False, overden: bool = False, plot: bool = False):
+	def _vote(self, dencon: bool = False, overden: bool = False):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
 		self.galaxies_cartesian = np.array(xyzs).T  # each galaxy is represented by (x, y, z)
@@ -152,7 +124,9 @@ class CenterFinder():
 				'[{}, {}]'.format(density_grid.min(), density_grid.max()))
 
 		# makes the kernel for scanning over the density grid
-		kernel_grid = self._kernel()
+		# kernel_grid = self._kernel()
+		kernel_grid = Kernel(self.kernel_type, self.kernel_radius, self.grid_spacing,
+			self.printout, False, *self.kernel_args).get_grid()
 
 		# this scans the kernel over the whole volume of the galaxy density grid
 		# calculates the tensor inner product of the two at each step
@@ -372,8 +346,8 @@ class CenterFinder():
 
 
 	def plot_slice(self, *args):
-		import plotter
-		plotter._plot_slice(self, args)
+		from .plotter import _plot_slice
+		_plot_slice(self, args)
 
 
 
