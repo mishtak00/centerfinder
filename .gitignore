@@ -2,3 +2,5 @@
 *.fits
 # Finder Desktop Services file
 .DS_Store
+# interpreter output
+*.pyc
