@@ -30,7 +30,7 @@ class CenterFinder():
 
 
 	def __init__(self, galaxy_file: str, wtd: bool, params_file: str, save: bool, printout: bool,
-		kernel_radius: float = 108., kernel_type: str = 'step', 
+		kernel_radius: float = 110., kernel_type: str = 'step', 
 		kernel_args: list = [], vote_threshold: float = -inf):
 
 		self.kernel_radius = kernel_radius
@@ -81,6 +81,9 @@ class CenterFinder():
 		self.kernel_args = args
 
 
+	def set_show_kernel(self, sk: bool):
+		self.show_kernel = sk
+
 
 	def set_vote_threshold(self, vt: float):
 		self.vote_threshold = vt
@@ -126,7 +129,7 @@ class CenterFinder():
 		# makes the kernel for scanning over the density grid
 		# kernel_grid = self._kernel()
 		kernel_grid = Kernel(self.kernel_type, self.kernel_radius, self.grid_spacing,
-			self.printout, False, *self.kernel_args).get_grid()
+			self.printout, self.show_kernel, *self.kernel_args).get_grid()
 
 		# this scans the kernel over the whole volume of the galaxy density grid
 		# calculates the tensor inner product of the two at each step

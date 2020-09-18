@@ -34,12 +34,13 @@ def main():
 	
 	# these define kernel behavior
 	parser.add_argument('-r', '--kernel_radius', type=float, help='Sets kernel radius.')
+	parser.add_argument('--show_kernel', action='store_true', help='Shows 1D kernel plot.')
 	kernel_types = parser.add_mutually_exclusive_group()
 	kernel_types.add_argument('-e', '--step_kernel', nargs='*', type=float,
 		help='Fits a step function to the kernel at kernel radius.')
-	kernel_types.add_argument('-g', '--gaussian_kernel', action='store_true', 
+	kernel_types.add_argument('-g', '--gaussian_kernel', nargs=1, type=float,
 		help='Fits a gaussian function to the kernel at kernel radius.')
-	kernel_types.add_argument('-a', '--wavelet_kernel', action='store_true', 
+	kernel_types.add_argument('-a', '--wavelet_kernel', nargs=1, type=float, 
 		help='Fits a wavelet function to the kernel at kernel radius.')
 	kernel_types.add_argument('-u', '--custom_kernel', type=str, 
 		help='Fits given custom array to kernel radially.')
@@ -73,22 +74,30 @@ def main():
 	# deletes the .fits extension and
 	# allows for other '.'s in the args.file string
 	filename = '.'.join(args.file.split('.')[:-1])
-
 	try:
 		os.mkdir('out_{}'.format(filename))
 	except FileExistsError:
 		pass
 
+	# creates and customizes instance of CenterFinder object
 	cf = CenterFinder(args.file, args.weighted_input, 
 		args.params_file, args.save, args.verbose)
 	if args.kernel_radius is not None:
 		cf.set_kernel_radius(args.kernel_radius)
+	if args.show_kernel:
+		cf.set_show_kernel(args.show_kernel)
 	if args.step_kernel is not None:
 		cf.set_kernel_type('step', args.step_kernel)
-	# elif
+	elif args.gaussian_kernel is not None:
+		cf.set_kernel_type('gaussian', args.gaussian_kernel)
+	elif args.wavelet_kernel is not None:
+		cf.set_kernel_type('wavelet', args.wavelet_kernel)
+	elif args.custom_kernel is not None:
+		cf.set_kernel_type('custom', args.custom_kernel)
 	if args.vote_threshold is not None:
 		cf.set_vote_threshold(args.vote_threshold)
 
+	# runs the centerfinding algorithm
 	cf.find_centers(dencon=args.density_contrast,
 					overden=args.overdensity)
 	if args.plot_slice is not None:
