@@ -7,6 +7,8 @@ Please read the publication in [arXiv](https://arxiv.org/abs/2008.12793) before 
 * [I/O](#io)
 * [Run](#run)
 * [Options](#options)
+    *[Kernel](#kernel)
+    *[Miscellaneous](#miscellaneous)
 * [Plot](#plot)
 
 
@@ -77,6 +79,38 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -o
 
 ## Options
 The following portion contains optional arguments that may be needed or wanted when running CenterFinder.
+
+### Kernel
+These options dictate the behavior of the kernel. You can think of the kernel as a sphericized 1-dimensional function, a shell, and you can choose what function to fit within the kernel box with the arguments below. The step, gaussian and wavelet functions will be centered at the kernel radius that's already been specified with the -r argument. These are all normalized in 1D.
+
+Ommitting these kernel options altogether just reproduces the default behavior from the paper, i.e. CenterFinder runs with a step function kernel with the specified grid_spacing thickness.
+
+#### Step function
+Add the following argument to ask CenterFinder to construct a step-function kernel with a specific thickness in Mpc/h. The following just asks for a step function kernel with a thickness of 10Mpc/h. Omit the numerical argument and the step kernel will be constructed with a width of 1 grid_spacing.
+```
+--step_kernel 10
+```
+
+#### Gaussian function
+Add the following argument for a gaussian function with a stdev of 20Mpc/h. You always have to specify the numerical argument here.
+```
+--gaussian_kernel 20
+```
+
+#### Wavelet function
+Add the following argument for a wavelet with a width of 30Mpc/h. You always have to specify the numerical argument here.
+```
+--wavelet_kernel 30
+```
+
+#### Plot the kernel function
+Add the following argument to have CenterFinder create and show a plot of the requested kernel function.
+```
+--show_kernel
+```
+
+
+### Miscellaneous
 
 #### Exclude centers under a vote threshold
 To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote number. The default threshold is 0 (no cutting by vote number, every bin in the centers grid is preserved). **Note:** An original, uncut centers grid will be saved to the outputs folder if the user specifies the -s argument (see below).
