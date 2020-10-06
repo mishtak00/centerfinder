@@ -36,6 +36,7 @@ class CenterFinder():
 		self.kernel_radius = kernel_radius
 		self.kernel_type = kernel_type
 		self.kernel_args = kernel_args
+		self.show_kernel = False
 		self.vote_threshold = vote_threshold
 
 		self.filename = '.'.join(galaxy_file.split('.')[:-1])
@@ -73,7 +74,6 @@ class CenterFinder():
 
 	def set_kernel_radius(self, kr: float):
 		self.kernel_radius = kr
-
 
 
 	def set_kernel_type(self, kt: str, args):

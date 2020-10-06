@@ -24,6 +24,9 @@ class Kernel:
 		elif self.type=='wavelet':
 			# interprets args[0] as width of wavelet with scale at kernel rad
 			self.width = self.args[0]
+		elif self.type=='custom':
+			# interprets args[0] as the file containing the custom array
+			self.source = self.args[0]
 
 		if self.printout:
 			print(f'Constructing {self.type} kernel...')
@@ -142,6 +145,11 @@ class Kernel:
 		wave_func = wave_func / np.sum(abs(wave_func)) # normalizes
 
 		return wave_func, kernel_r_idx_units_upper_bound, kernel_r_idx_units_lower_bound
+
+
+
+	# def _make_custom(self, ):
+	# 	#reads custom array from current 
 
 
 
