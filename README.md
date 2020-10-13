@@ -103,7 +103,7 @@ Add the following argument for a wavelet with a width of 30Mpc/h. You always hav
 --wavelet_kernel 30
 ```
 
-### Custom function
+#### Custom function
 Define a custom function over a desired range by creating an .npy array of values in the centerfinder directory. This can be done in many ways with numpy. For example, if we want a very uninteresting 0 function, we can open the python interpreter from the terminal while in the centerfinder dir and type
 ```
 python
