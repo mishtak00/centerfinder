@@ -103,6 +103,19 @@ Add the following argument for a wavelet with a width of 30Mpc/h. You always hav
 --wavelet_kernel 30
 ```
 
+### Custom function
+Define a custom function over a desired range by creating an .npy array of values in the centerfinder directory. This can be done in many ways with numpy. For example, if we want a very uninteresting 0 function, we can open the python interpreter from the terminal while in the centerfinder dir and type
+```
+python
+import numpy as np
+np.save("custom.npy", np.zeros(23))
+```
+Now we have a custom function that's 23 indices long. This domain length is interpreted as 23\*grid_spacing by CenterFinder. Beware that np arrays are created from 0, so if you want something defined out to and including 110Mpc/h and your grid spacing is 5Mpc/h, you must feed CenterFinder an array that's 23 indices long.
+Now that we have the custom function, we can specify it as the kernel function by adding the following argument to the usual centerfinder call, where the second string is the name of the .npy file containing our 1D function.
+```
+--custom_kernel custom.npy
+```
+
 #### Plot the kernel function
 Add the following argument to have CenterFinder create and show a plot of the requested kernel function.
 ```
