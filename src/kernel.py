@@ -74,6 +74,18 @@ class Kernel:
 			kernel_bin_count, kernel_center_idx, kernel_center)
 
 
+	def _calculate_settings_custom(self, func_arr: np.array):
+		# look at _calculate_settings() for descriptions of below calculations
+		kernel_r_idx_units = len(func_arr)
+		circumscribed_r_idx_units = int(np.ceil(3**.5 * kernel_r_idx_units))
+		kernel_bin_count = 2 * kernel_r_idx_units + 1
+		kernel_center_idx = int(kernel_bin_count / 2)
+		kernel_center = np.array([kernel_center_idx, ] * 3)
+		return (
+			kernel_r_idx_units, circumscribed_r_idx_units,
+			kernel_bin_count, kernel_center_idx, kernel_center)
+
+
 
 	def _make_step(self, kernel_r_idx_units: int, circumscribed_r_idx_units: int):
 		# transforms kernel thickness to index units
@@ -148,15 +160,25 @@ class Kernel:
 
 
 
-	# def _make_custom(self, ):
-	# 	#reads custom array from current 
+	def _make_custom(self):
+		# reads custom array from file passed as argument to Kernel
+		custom_func = np.load(self.source)
+		# kernel radius here is the whole domain of the user defined function
+		# multiplied by the grid_spacing, so a function defined over 22 indices with
+		# a grid_spacing 5Mpc/h infers that the kernel_radius is 110Mpc/h
+		kernel_r_idx_units_lower_bound = 0
+		kernel_r_idx_units_upper_bound = len(custom_func)
+
+		return custom_func, kernel_r_idx_units_upper_bound, kernel_r_idx_units_lower_bound
 
 
 
 	def _make_grid(self) -> np.ndarray:
 
-		kernel_r_idx_units, circumscribed_r_idx_units,\
-		kernel_bin_count, kernel_center_idx, kernel_center = self._calculate_settings()
+		if self.type=='step' or self.type=='gaussian' or self.type=='wavelet':
+			kernel_r_idx_units, circumscribed_r_idx_units,\
+			kernel_bin_count, kernel_center_idx, kernel_center = self._calculate_settings()
+			
 
 		# evaluates 1D function that's gonna be rotated below
 		# defined over the entire radius of the circumscribed sphere of the kernel cube
@@ -169,6 +191,13 @@ class Kernel:
 		elif self.type=='wavelet':
 			func, kernel_r_idx_units_upper_bound, kernel_r_idx_units_lower_bound = \
 				self._make_wavelet(kernel_r_idx_units, circumscribed_r_idx_units)
+		elif self.type=='custom':
+			# the upper bound radius is just the radius here
+			func, kernel_r_idx_units_upper_bound, kernel_r_idx_units_lower_bound = self._make_custom()
+			kernel_r_idx_units, circumscribed_r_idx_units,\
+			kernel_bin_count, kernel_center_idx, kernel_center = self._calculate_settings_custom(func)
+			# pads function with 0s from the user-fed radius to the circurmscribed radius
+			func = np.array([func[i] if i<kernel_r_idx_units else 0 for i in range(circumscribed_r_idx_units)])
 
 		if self.printout:
 			print('Kernel radius in index units:', kernel_r_idx_units)
@@ -204,10 +233,6 @@ class Kernel:
 
 
 
-# if __name__ == '__main__':
-	# Kernel('step', 110, 5, True, True, 10)
-	# Kernel('gaussian', 110, 5, True, True, 10)
-	# Kernel('wavelet', 110, 5, True, True, 30)
 
 
 
