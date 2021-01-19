@@ -21,7 +21,12 @@ from src.centerfinder import CenterFinder
 
 
 
+
+
 def main():
+
+	print('Please reference original publication arXiv:2008.12793 '\
+		'when using this software for research/redistribution.')
 	
 	parser = ArgumentParser(description=
 		'~~~~~~~~~~~~~~~~~ ( * ) Center Finder ( * ) ~~~~~~~~~~~~~~~~~')
@@ -42,7 +47,7 @@ def main():
 		help='Fits a gaussian function to the kernel at kernel radius.')
 	kernel_types.add_argument('-a', '--wavelet_kernel', nargs=1, type=float, 
 		help='Fits a wavelet function to the kernel at kernel radius.')
-	kernel_types.add_argument('-u', '--custom_kernel', type=str, 
+	kernel_types.add_argument('-u', '--custom_kernel', nargs=1, type=str, 
 		help='Fits given custom array to kernel radially.')
 
 	# these define behavior of density grid
@@ -68,6 +73,9 @@ def main():
 	parser.add_argument('-l', '--plot_slice', nargs='*', type=float,
 		help='CenterFinder will plot a slice of the centers found with '\
 		'galaxies that voted for them superimposed.')
+	parser.add_argument('--plot_coord_hist', type=str,
+		help='CenterFinder will plot a histogram of the selected coordinate for '\
+		'both galaxies and centers. Choices: RA, DEC, Z, R')
 
 	args = parser.parse_args()
 
@@ -100,8 +108,16 @@ def main():
 	# runs the centerfinding algorithm
 	cf.find_centers(dencon=args.density_contrast,
 					overden=args.overdensity)
+
+	# plotting options
 	if args.plot_slice is not None:
-		cf.plot_slice(*args.plot_slice)
+		from src.plotter import _plot_slice
+		_plot_slice(cf, args.plot_slice)
+	if args.plot_coord_hist is not None:
+		from src.plotter import _plot_coord_hist
+		_plot_coord_hist(cf, args.plot_coord_hist)
+
+
 
 
 
