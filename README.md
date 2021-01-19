@@ -157,6 +157,9 @@ Applying the Density Contrast method to the provided catalog as described in the
 ## Plotting
 
 ### Slice plot
+
+![Z slice plot](example_plots/slice_plot_z_0.51_0.52.png)
+
 You are able to plot a view of the results of CenterFinder that helps visualize its output just like the picture in section 3.6 of the paper. This can be done by adding the --plot_slice or -l argument to your command to CenterFinder. The picture will be saved in 300dpi png format in the outputs folder. Currently, circles are drawn around histogram cells that are in the upper 20 percentile by center density. In spatial regions where this would draw more than 20 on-screen circles, this density floor rises automatically until there are only 20 on-screen circles or less in order to preserve a clean result.
 
 #### Whole space
@@ -178,6 +181,9 @@ Add 6 trailing numbers to bind the centers and galaxies in the image by all thei
 ```
 
 ### Coordinate histogram
+
+![RA histogram](example_plots/RA_hist_r_110.0_cut_200.0.png)
+
 Use this option if you want to look at the general distribution of a coordinate for both the input and the output data. Enter the argument below, indicating which coordinate you're interested in (RA, DEC, Z, R), and CenterFinder will plot a histogram of that coordinate for galaxies and centers alike. These distributions should be expected to be more or less overlapping with each other.
 ```
 --plot_coord_hist RA
