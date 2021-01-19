@@ -75,3 +75,38 @@ def _plot_slice(cf, bounds):
 		plt.show()
 
 
+def _plot_coord_hist(cf, which: str):
+	import matplotlib.pyplot as plt
+
+	if which=='RA':
+		gcoord, ccoord = cf.G_ra, cf.C_ra
+		plt.xlabel(which + r' $[\degree]$')
+	elif which=='DEC':
+		gcoord, ccoord = cf.G_dec, cf.C_dec
+		plt.xlabel(which + r' $[\degree]$')
+	elif which=='Z':
+		gcoord, ccoord = cf.G_redshift, cf.C_redshift
+		plt.xlabel(which + r' $[h^{-1}Mpc]$')
+	elif which=='R':
+		gcoord, ccoord = cf.G_radii, cf.C_radii
+		plt.xlabel(which + r' $[h^{-1}Mpc]$')
+	else:
+		raise ValueError('Plotting Error: Can only plot histogram for one of '\
+		 'RA, DEC, Z, R; instead found "{}"'.format(which))
+
+	plt.hist(gcoord, label='Galaxies ' + which)
+	plt.hist(ccoord, label='Centers ' + which, histtype='step')
+	plt.title('Galaxy and center unweighted counts by ' + which)
+	plt.ylabel('Count')
+	plt.legend()
+
+	if cf.save:
+		savename = cf.savename + '{}_hist_r_{}_cut_{}.png'.format(which,
+			cf.kernel_radius,cf.vote_threshold)
+		plt.savefig(savename, dpi=300)
+
+	plt.show()
+
+
+
+

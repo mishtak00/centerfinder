@@ -348,11 +348,6 @@ class CenterFinder():
 
 
 
-	def plot_slice(self, *args):
-		from .plotter import _plot_slice
-		_plot_slice(self, args)
-
-
 
 
 

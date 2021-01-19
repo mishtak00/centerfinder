@@ -57,6 +57,14 @@ def load_data_weighted(filename: str) -> (np.recarray,)*4:
 	return ra, dec, redshift, weight
 
 
+def save_data(filename: str, ra: np.array, dec: np.array, z: np.array):
+	racol = fits.Column(name='ra', array=ra, format='E')
+	deccol = fits.Column(name='dec', array=dec, format='E')
+	zcol = fits.Column(name='z', array=z, format='E')
+	t = fits.BinTableHDU.from_columns([racol, deccol, zcol])
+	t.writeto(filename, overwrite=True)
+
+
 def save_data_weighted(filename: str, ra: np.array, dec: np.array, z: np.array, w: np.array):
 	# 'E' is the fits format for single-precision floating point
 	racol = fits.Column(name='ra', array=ra, format='E')
@@ -102,6 +110,7 @@ def cartesian2sky(xs: np.array, ys: np.array, zs: np.array, LUT_redshifts,
 	radii = (xs ** 2 + ys ** 2 + zs ** 2) ** 0.5
 	redshift = np.array(LUT_redshifts(radii))
 	dec = np.rad2deg(np.arcsin(zs / radii))
+	# TODO: fix this hack
 	rafix = np.round((ramin+ramax)/2 //90) *90
 	ra = np.rad2deg(np.arctan(ys / xs)) + rafix
 	return ra, dec, redshift, radii
