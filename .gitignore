@@ -4,3 +4,5 @@
 .DS_Store
 # interpreter output
 *.pyc
+# example plots
+*.png
