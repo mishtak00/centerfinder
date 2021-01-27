@@ -21,12 +21,10 @@ from src.centerfinder import CenterFinder
 
 
 
-
-
 def main():
 
-	print('Please reference original publication arXiv:2008.12793 '\
-		'when using this software for publishing/redistribution.')
+	print('\n\n\nPlease reference original publication arXiv:2008.12793 '\
+		'when using this software for publishing/redistribution.\n\n\n')
 	
 	parser = ArgumentParser(description=
 		'~~~~~~~~~~~~~~~~~ ( * ) Center Finder ( * ) ~~~~~~~~~~~~~~~~~')
@@ -77,6 +75,9 @@ def main():
 		help='CenterFinder will plot a histogram of the selected coordinate for '\
 		'both galaxies and centers. Choices: RA, DEC, Z, R')
 
+	# refinement process args
+	parser.add_argument('--refine', nargs='*')
+
 	args = parser.parse_args()
 
 	# deletes the .fits extension and
@@ -118,7 +119,8 @@ def main():
 		_plot_coord_hist(cf, args.plot_coord_hist)
 
 
-
+	if args.refine is not None:
+		cf.refine_centers(args.refine)
 
 
 if __name__ == '__main__':
