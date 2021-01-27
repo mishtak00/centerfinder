@@ -90,7 +90,7 @@ class CenterFinder():
 
 
 
-	def _vote(self, dencon: bool = False, overden: bool = False):
+	def _vote(self, dencon: bool = False, overden: bool = False, premade_kernel: np.ndarray = None):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
 		self.galaxies_cartesian = np.array(xyzs).T  # each galaxy is represented by (x, y, z)
@@ -98,6 +98,8 @@ class CenterFinder():
 		# gets the 3d histogram (density_grid) and the grid bin coordintes in cartesian (grid_edges)
 		bin_counts_3d = np.array([np.ceil((xyzs[i].max() - xyzs[i].min()) / self.grid_spacing) 
 									for i in range(len(xyzs))], dtype=int)
+
+		# TODO: when does the weighted count happen?
 		density_grid, self.density_grid_edges = np.histogramdd(self.galaxies_cartesian, bins=bin_counts_3d)
 
 		if self.printout:
@@ -126,15 +128,26 @@ class CenterFinder():
 			print('Minimum and maximum values of density field grid cells: '\
 				'[{}, {}]'.format(density_grid.min(), density_grid.max()))
 
-		# makes the kernel for scanning over the density grid
-		# kernel_grid = self._kernel()
-		kernel_grid = Kernel(self.kernel_type, self.kernel_radius, self.grid_spacing,
-			self.printout, self.show_kernel, *self.kernel_args).get_grid()
+		if premade_kernel is None:
+			# makes the kernel for scanning over the density grid
+			kernel = Kernel(self.kernel_type, self.kernel_radius, self.grid_spacing,
+				self.printout, self.show_kernel, *self.kernel_args)
+			# for refinement process, the following allows kernel jittering
+			# box around each center is 10% larger than the kernel outer radius
+			self.centerbox_r_upper_bound_idx_units = np.round(kernel.\
+				kernel_r_idx_units_upper_bound*1.1)
+
+		# sets kernel for the refinement process
+		else:
+			kernel = premade_kernel
+
+		# TODO: for refinement DEV ONLY
+		self.density_grid = density_grid
 
 		# this scans the kernel over the whole volume of the galaxy density grid
 		# calculates the tensor inner product of the two at each step
 		# and finally stores this value as the number of voters per that bin in the centers grid
-		self.centers_grid = np.round(fftconvolve(density_grid, kernel_grid, mode='same'))
+		self.centers_grid = np.round(fftconvolve(density_grid, kernel.get_grid(), mode='same'))
 		
 		if self.printout:
 			print('Voting procedure completed successfully...')
@@ -155,7 +168,7 @@ class CenterFinder():
 		bin_centers_edges_xs, bin_centers_edges_ys, bin_centers_edges_zs = \
 			np.array([(grid_edges[i][:-1] + grid_edges[i][1:]) / 2 for i in range(len(grid_edges))])
 
-		# TODO: remove, unncessary
+		# TODO: remove, unnecessary
 		# if self.save:
 		# 	np.save(self.savename + '_xbins.npy', bin_centers_edges_xs)
 		# 	np.save(self.savename + '_ybins.npy', bin_centers_edges_ys)
@@ -325,8 +338,8 @@ class CenterFinder():
 
 		self._vote(dencon=dencon, overden=overden)
 		
-		centers_indices = np.asarray(self.centers_grid >= self.vote_threshold).nonzero()
-		self.C_weights = self.centers_grid[centers_indices]
+		self.centers_indices = np.asarray(self.centers_grid >= self.vote_threshold).nonzero()
+		self.C_weights = self.centers_grid[self.centers_indices]
 		if self.printout:
 			precut = len(self.centers_grid[self.centers_grid!=0])
 			postcut = len(self.C_weights)
@@ -338,7 +351,7 @@ class CenterFinder():
 		centers_bin_coords = np.array([(self.density_grid_edges[i][:-1] + self.density_grid_edges[i][1:]) / 2 
 			for i in range(len(self.density_grid_edges))])
 		delattr(self, 'density_grid_edges')
-		C_xyzs = np.array([centers_bin_coords[i][centers_indices[i]] for i in range(len(centers_indices))])
+		C_xyzs = np.array([centers_bin_coords[i][self.centers_indices[i]] for i in range(len(self.centers_indices))])
 		self.C_ra, self.C_dec, self.C_redshift, _ = cartesian2sky(*C_xyzs, self.LUT_redshifts, 
 																self.G_ra.min(), self.G_ra.max())
 		
@@ -346,6 +359,57 @@ class CenterFinder():
 		savename = self.savename + f'found_centers_r_{self.kernel_radius}_cut_{self.vote_threshold}.fits'
 		save_data_weighted(savename, self.C_ra, self.C_dec, self.C_redshift, self.C_weights)
 
+
+
+
+	def refine_centers(self, refinement_args):
+		"""
+		Refines the locations of found centers.
+		"""
+
+		kernel_type = refinement_args[0]
+		kernel_args = [float(refinement_args[1])]
+		# grid_spacing = refinement_args[2]
+
+		# makes the kernel for scanning over the density grid
+		# kernel_grid = self._kernel()
+		kernel = Kernel(kernel_type, self.kernel_radius, self.grid_spacing,
+			self.printout, self.show_kernel, *kernel_args)
+
+		# for refinement process, the following allows kernel jittering
+		# box around each center is 10% larger than the kernel outer radius
+		self.centerbox_r_upper_bound_idx_units = int(np.round(kernel.\
+			kernel_r_idx_units_upper_bound*1.1))
+
+
+		# print(self.centers_indices)
+
+		for idxs in zip(*self.centers_indices):
+
+			# note down original indexes because will have to do a coord
+			# translation in the end after the convolution
+
+			# print(idxs)
+
+			# need the box of galaxies around this center
+			# these calculations deal with edge cases
+			(xlo,xhi),(ylo,yhi),(zlo,zhi) = tuple(
+			(max(0, idxs[i]-self.centerbox_r_upper_bound_idx_units), 
+			min(idxs[i]+self.centerbox_r_upper_bound_idx_units, self.density_grid.shape[i]))
+			for i in range(len(idxs)))
+
+			# print(centerbox_bounds_idx_units)
+			# print(xlo,xhi,ylo,yhi,zlo,zhi)
+
+			densitybox = self.density_grid[xlo:xhi,ylo:yhi,zlo:zhi]
+			# print(densitybox.shape)
+
+			centerbox = np.round(fftconvolve(densitybox, kernel.get_grid(), mode='same'))
+
+			# print(centerbox.shape)
+
+
+			# break
 
 
 
