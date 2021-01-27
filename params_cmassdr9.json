@@ -2,5 +2,6 @@
 	"c" : 300000.0,
 	"H0" : 70.0,
 	"Omega_M" : 0.274,
+	"Omega_K" : 0,
 	"grid_spacing" : 5
 }
