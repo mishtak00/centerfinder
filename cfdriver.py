@@ -56,9 +56,10 @@ def main():
 		help='CenterFinder will try to read a fourth column from input data '\
 		'and interpret said values as weights.')
 	con_or_over = parser.add_mutually_exclusive_group()
-	con_or_over.add_argument('-c', '--density_contrast', action='store_true',
+	con_or_over.add_argument('-c', '--density_contrast', nargs='*',
 		help='CenterFinder will subtract the background from the galaxy '\
-		'density grid before voting.')
+		'density grid before voting. It will set negative weights to 0 if '\
+		'anything is entered after -c.')
 	con_or_over.add_argument('-o', '--overdensity', action='store_true',
 		help='CenterFinder will subtract average density from the galaxy '\
 		'density grid before voting.')
@@ -107,7 +108,17 @@ def main():
 		cf.set_vote_threshold(args.vote_threshold)
 
 	# runs the centerfinding algorithm
-	cf.find_centers(dencon=args.density_contrast,
+	if args.density_contrast is not None:
+		do_dencon = True
+		if len(args.density_contrast)==0:
+			keep_neg_wts = True
+		else:
+			keep_neg_wts = False
+	else:
+		do_dencon = False
+		keep_neg_wts = False
+	dencon_args = (do_dencon, keep_neg_wts)
+	cf.find_centers(dencon=dencon_args,
 					overden=args.overdensity)
 
 	# plotting options
@@ -119,8 +130,9 @@ def main():
 		_plot_coord_hist(cf, args.plot_coord_hist)
 
 
-	if args.refine is not None:
-		cf.refine_centers(args.refine)
+	# jittering DEV
+	# if args.refine is not None:
+	# 	cf.refine_centers(args.refine)
 
 
 if __name__ == '__main__':

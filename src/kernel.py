@@ -30,7 +30,8 @@ class Kernel:
 
 		if self.printout:
 			print(f'Constructing {self.type} kernel...')
-		self.grid = self._make_grid()
+
+		self.grid, self.kernel_r_idx_units_upper_bound = self._make_grid()
 
 		if self.printout:
 			print('Kernel constructed successfully...')
@@ -199,6 +200,8 @@ class Kernel:
 			# pads function with 0s from the user-fed radius to the circurmscribed radius
 			func = np.array([func[i] if i<kernel_r_idx_units else 0 for i in range(circumscribed_r_idx_units)])
 
+		# sets
+
 		if self.printout:
 			print('Kernel radius in index units:', kernel_r_idx_units)
 			print('Kernel radius upper bound:', kernel_r_idx_units_upper_bound)
@@ -209,7 +212,7 @@ class Kernel:
 		if self.plot:
 			self._plot_1d_func(func, circumscribed_r_idx_units)
 
-		return Kernel._sphericize(func, kernel_center, kernel_bin_count)
+		return Kernel._sphericize(func, kernel_center, kernel_bin_count), kernel_r_idx_units_upper_bound
 
 
 

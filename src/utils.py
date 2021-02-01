@@ -33,7 +33,7 @@ def load_hyperparameters(params_file: str):
 		h_ = H0 / 100.
 		Omega_M = hp['Omega_M']
 		Omega_K = hp['Omega_K']
-		if Omega_L not in hp:
+		if 'Omega_L' not in hp:
 			Omega_L = 1 - Omega_M - Omega_K
 		else:
 			Omega_L = hp['Omega_L']

@@ -46,7 +46,7 @@ CenterFinder's main routine accepts weighted or unweighted input and deals with 
 
 Additionally, the program expects a JSON file named 'params.json'. The 'params_cmassdr9.json' file has been given here as a template parameters file. This file is expected to contain select cosmological parameters as well as a crucial class variable for CenterFinder: grid_spacing. Grid spacing is the side length of each cubic cell in the big grids that represent histograms in real space in CenterFinder. The latter is suggested to be kept between 5 and 10 h-1Mpc during testing stages, selecting values under 5 only when more refined analysis is needed. CenterFinder's runtime is inversely proportional to the fifth power of this variable, i.e. O(N^5) where N is the number of grid cells on each dimensional axis.
 
-Note that the only cosmological parameters that the user is required to manually set in 'params.json' are Omega_M and Omega_K. One can set Omega_Lambda as well, but if omitted, it will be automatically calculated as 1 - Omega_M - Omega_K.
+**Note**: The only cosmological parameters that the user is required to manually set in 'params.json' are Omega_M and Omega_K. One can set Omega_Lambda as well, but if omitted, it will be automatically calculated as 1 - Omega_M - Omega_K.
 
 
 ## Run
@@ -65,9 +65,16 @@ python cfdriver.py mock_cmassDR9_north_3001.fits -w -r 110
 ```
 
 #### Density Contrast
-To subtract the expected grid from the galaxy density grid, call the --density_contrast or -c argument like below. The default voting procedure won't apply background subtraction unless the user requests it. This is the method described in *"2.2 The Density Field"* portion of the paper.
+To subtract the expected grid from the galaxy density grid, call the --density_contrast or -c argument like below. This is the method described in *"2.2 The Density Field"* portion of the paper.
+
+The default voting procedure won't apply background subtraction unless the user requests it. Call this argument without any trailing additions to keep all weights in the density field as they are:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -t 50 -c
+```
+
+Call it with an additional 0 to set all negative valued weights in the density field to 0. **Note:** This is the method used in the original study.
+```
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -t 250 -c 0
 ```
 
 #### Over-Density
@@ -108,8 +115,9 @@ Add the following argument for a wavelet with a width of 30Mpc/h. You always hav
 Define a custom function over a desired range by creating an .npy array of values in the centerfinder directory. This can be done in many ways with numpy. For example, if we want a very uninteresting 0 function, we can open the python interpreter from the terminal while in the centerfinder dir and type
 ```
 python
-import numpy
-numpy.save("custom.npy", np.zeros(23))
+>>> import numpy
+>>> numpy.save("custom.npy", np.zeros(23))
+>>> quit()
 ```
 Now we have a custom function that's 23 indices long. This domain length is interpreted as 23\*grid_spacing by CenterFinder. Beware that np arrays are created from 0, so if you want something defined out to and including 110Mpc/h and your grid spacing is 5Mpc/h, you must feed CenterFinder an array that's 23 indices long.
 Now that we have the custom function, we can specify it as the kernel function by adding the following argument to the usual centerfinder call, where the second string is the name of the .npy file containing our 1D function.
@@ -129,25 +137,25 @@ Add the following argument to have CenterFinder create and show a plot of the re
 #### Exclude centers under a vote threshold
 To apply a vote cut to the centers grid, call the --vote_threshold or -t argument followed by desired vote number. The default threshold is 0 (no cutting by vote number, every bin in the centers grid is preserved). **Note:** An original, uncut centers grid will be saved to the outputs folder if the user specifies the -s argument (see below).
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c -t 170
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c 0 -t 250
 ```
 
 #### Change the default hyperparameters file
 Add the --params_file or -p argument to change the default file from which the cosmological parameters are loaded to a new file whose name is given as argument:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c -t 170 -p params_cmassdr9.json
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c 0 -t 250 -p params_cmassdr9.json
 ```
 
 #### Save additional output
 Add the --save or -s argument to save additional outputs in the "out_INPUT_FILENAME" folder (created automatically inside current directory). One such output is the whole centers grid without a vote cut.
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c -t 170 -p params_cmassdr9.json -s
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c 0 -t 250 -p params_cmassdr9.json -s
 ```
 
 #### Activate runtime messages to standard output
 Add the --verbose or -v argument to have sanity checks and feedback on the running process printed to standard output as the program runs:
 ```
-python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c -t 170 -p params_cmassdr9.json -s -v
+python cfdriver.py mock_cmassDR9_north_3001.fits -r 110 -c 0 -t 250 -p params_cmassdr9.json -s -v
 ```
 
 #### Running on a supercomputer

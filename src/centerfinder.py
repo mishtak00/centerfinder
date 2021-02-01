@@ -90,7 +90,8 @@ class CenterFinder():
 
 
 
-	def _vote(self, dencon: bool = False, overden: bool = False, premade_kernel: np.ndarray = None):
+	def _vote(self, dencon: tuple = (False, False), overden: bool = False, 
+		premade_kernel: np.ndarray = None):
 
 		xyzs = sky2cartesian(self.G_ra, self.G_dec, self.G_redshift, self.LUT_radii) # galaxy x, y and z coordinates
 		self.galaxies_cartesian = np.array(xyzs).T  # each galaxy is represented by (x, y, z)
@@ -99,19 +100,25 @@ class CenterFinder():
 		bin_counts_3d = np.array([np.ceil((xyzs[i].max() - xyzs[i].min()) / self.grid_spacing) 
 									for i in range(len(xyzs))], dtype=int)
 
-		# TODO: when does the weighted count happen?
-		density_grid, self.density_grid_edges = np.histogramdd(self.galaxies_cartesian, bins=bin_counts_3d)
+		# histograms the data points in real space with given weights
+		density_grid, self.density_grid_edges = np.histogramdd(self.galaxies_cartesian, 
+			bins=bin_counts_3d, weights=self.G_weights)
 
 		if self.printout:
 			print('Histogramming completed successfully...')
 			print('Density grid shape:', density_grid.shape)
 
 		# makes expected grid and subtracts it from the density grid
-		if dencon:
+		if dencon[0]:
 			background = self._project_and_sample(density_grid, self.density_grid_edges)
 			density_grid -= background
 			del background
-			density_grid[density_grid < 0.] = 0. # TODO: ask abt this
+			# keep or discard negative valued weights
+			# dencon[1] set to True means keep negative weights
+			if not dencon[1]:
+				if self.printout:
+					print('Discarding all negative weights in density grid...')
+				density_grid[density_grid < 0.] = 0.
 			if self.printout:
 				print('Background subtraction completed successfully...')
 		
@@ -128,16 +135,15 @@ class CenterFinder():
 			print('Minimum and maximum values of density field grid cells: '\
 				'[{}, {}]'.format(density_grid.min(), density_grid.max()))
 
+		# sets kernel for the refinement process
 		if premade_kernel is None:
 			# makes the kernel for scanning over the density grid
 			kernel = Kernel(self.kernel_type, self.kernel_radius, self.grid_spacing,
 				self.printout, self.show_kernel, *self.kernel_args)
 			# for refinement process, the following allows kernel jittering
-			# box around each center is 10% larger than the kernel outer radius
+			# box around each center is 5% larger than the kernel outer radius
 			self.centerbox_r_upper_bound_idx_units = np.round(kernel.\
-				kernel_r_idx_units_upper_bound*1.1)
-
-		# sets kernel for the refinement process
+				kernel_r_idx_units_upper_bound*1.05)
 		else:
 			kernel = premade_kernel
 
