@@ -32,10 +32,13 @@ def load_hyperparameters(params_file: str):
 		c_over_H0 = c / H0
 		h_ = H0 / 100.
 		Omega_M = hp['Omega_M']
-		Omega_L = 1 - Omega_M
 		Omega_K = hp['Omega_K']
+		if Omega_L in hp:
+			Omega_L = hp['Omega_L']
+		else:
+			Omega_L = 1 - Omega_M - Omega_K
 		grid_spacing = hp['grid_spacing']  # h-1Mpc
-	cosmology = h_, c_over_H0, Omega_M, Omega_L, Omega_K
+	cosmology = h_, c_over_H0, Omega_M, Omega_K, Omega_L
 	return cosmology, grid_spacing
 
 
@@ -78,8 +81,8 @@ def save_data_weighted(filename: str, ra: np.array, dec: np.array, z: np.array, 
 
 def z2r(z: np.array, cosmology: tuple) -> float:
 	"""Transforms observed redshift to radial distance. """
-	h_, c_over_H0, Omega_M, Omega_L, Omega_K = cosmology
-	# multiply and divide by lil h to transform from Mpc to h-1Mpc
+	h_, c_over_H0, Omega_M, Omega_K, Omega_L = cosmology
+	# multiply by lil h to transform from Mpc to h-1Mpc
 	const = h_ * c_over_H0
 	return const * integrate.quad(lambda z_: 
 		(Omega_M*(1+z_)**3 + Omega_K*(1+z_)**2 + Omega_L)**-0.5, 0, z)[0]

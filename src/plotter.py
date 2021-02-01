@@ -80,7 +80,6 @@ def _plot_slice(cf, bounds):
 
 
 def _plot_coord_hist(cf, which: str):
-	import matplotlib.pyplot as plt
 
 	if which=='RA':
 		gcoord, ccoord = cf.G_ra, cf.C_ra
