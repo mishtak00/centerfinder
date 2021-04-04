@@ -126,8 +126,8 @@ class CenterFinder():
 		# weighted density field and subtracts it from the density field
 		elif overden:
 			denavg = np.average(density_grid[density_grid!=0])
-			density_grid -= denavg
-			density_grid /= denavg
+			density_grid[density_grid!=0] -= denavg
+			density_grid[density_grid!=0] /= denavg
 			if self.printout:
 				print('Overdensity calculation completed successfully...')
 
@@ -367,7 +367,9 @@ class CenterFinder():
 
 
 
-
+	"""
+	DEV IN PROGRESS
+	"""
 	def refine_centers(self, refinement_args):
 		"""
 		Refines the locations of found centers.
