@@ -153,7 +153,7 @@ class CenterFinder():
 		# this scans the kernel over the whole volume of the galaxy density grid
 		# calculates the tensor inner product of the two at each step
 		# and finally stores this value as the number of voters per that bin in the centers grid
-		self.centers_grid = np.round(fftconvolve(density_grid, kernel.get_grid(), mode='same'))
+		self.centers_grid = fftconvolve(density_grid, kernel.get_grid(), mode='same')
 		
 		if self.printout:
 			print('Voting procedure completed successfully...')
